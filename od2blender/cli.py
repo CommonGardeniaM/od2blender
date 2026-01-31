@@ -8,7 +8,10 @@ from od2blender.config import (
     get_default_blender_path,
     get_default_backend,
     get_default_exporters,
+    get_default_model_object,
+    get_default_model_path,
     get_default_processors,
+    get_default_pose3d_source,
     get_default_video_path,
     save_default_paths,
 )
@@ -68,6 +71,26 @@ def main(
         "--pose-model",
         help="Path to MediaPipe pose landmarker model (.task)",
     ),
+    pose3d_source: str | None = typer.Option(
+        None,
+        "--pose3d-source",
+        help="Pose source for Blender export: projected or raw",
+    ),
+    model_path: Path | None = typer.Option(
+        None,
+        "--model",
+        help="Path to 3D model for Rigify retargeting",
+    ),
+    model_object: str | None = typer.Option(
+        None,
+        "--model-object",
+        help="Object name inside the model file (optional)",
+    ),
+    test_motion: bool = typer.Option(
+        False,
+        "--test-motion",
+        help="Generate a test crouch motion for the model",
+    ),
 ) -> None:
     # Resolve defaults from config if not provided
     if video_path is None:
@@ -76,6 +99,12 @@ def main(
         blender_path = get_default_blender_path()
     if backend is None:
         backend = get_default_backend()
+    if pose3d_source is None:
+        pose3d_source = get_default_pose3d_source() or "projected"
+    if model_path is None:
+        model_path = get_default_model_path()
+    if model_object is None:
+        model_object = get_default_model_object()
 
     if processors is None:
         processors_list = get_default_processors()
@@ -102,6 +131,10 @@ def main(
         exporters=exporters_list,
         pose_scale=pose_scale,
         pose_model=pose_model,
+        pose3d_source=pose3d_source,
+        model_path=model_path,
+        model_object=model_object,
+        test_motion=test_motion,
     )
 
     # Save the used paths as defaults for next time
@@ -111,6 +144,9 @@ def main(
         backend=backend,
         processors=processors_list,
         exporters=exporters_list,
+        pose3d_source=pose3d_source,
+        model_path=model_path,
+        model_object=model_object,
     )
 
     raise typer.Exit(code=int(exit_code))

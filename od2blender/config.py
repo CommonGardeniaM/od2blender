@@ -49,12 +49,46 @@ def get_default_blender_path() -> Path | None:
     return None
 
 
+def get_default_pose3d_source() -> str | None:
+    """Get the default pose3d source from config, if it exists."""
+    config = get_config()
+    source = config.get("default_pose3d_source")
+    if isinstance(source, str):
+        value = source.strip().lower()
+        if value in {"projected", "raw"}:
+            return value
+    return None
+
+
+def get_default_model_path() -> Path | None:
+    """Get the default model path from config, if it exists."""
+    config = get_config()
+    path_str = config.get("default_model_path")
+    if path_str:
+        path = Path(path_str).expanduser()
+        if path.exists():
+            return path
+    return None
+
+
+def get_default_model_object() -> str | None:
+    """Get the default model object name from config, if it exists."""
+    config = get_config()
+    name = config.get("default_model_object")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return None
+
+
 def save_default_paths(
     video_path: Path | None,
     blender_path: Path | None,
     backend: str | None = None,
     processors: list[str] | None = None,
     exporters: list[str] | None = None,
+    pose3d_source: str | None = None,
+    model_path: Path | None = None,
+    model_object: str | None = None,
 ) -> None:
     """Save default settings to config."""
     config = get_config()
@@ -68,6 +102,12 @@ def save_default_paths(
         config["default_processors"] = list(processors)
     if exporters is not None:
         config["default_exporters"] = list(exporters)
+    if pose3d_source:
+        config["default_pose3d_source"] = str(pose3d_source).strip().lower()
+    if model_path:
+        config["default_model_path"] = str(model_path.expanduser().resolve())
+    if model_object:
+        config["default_model_object"] = str(model_object).strip()
     save_config(config)
 
 

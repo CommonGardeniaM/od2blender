@@ -28,7 +28,17 @@ class BlenderExporter(Exporter):
             str(context.plane_width),
             "--z-depth",
             str(context.z_depth),
+            "--pose-scale",
+            str(context.pose_scale),
+            "--pose3d-source",
+            str(context.pose3d_source),
         ]
+        if context.test_motion:
+            cmd.append("--test-motion")
+        if context.model_path is not None:
+            cmd.extend(["--model", str(context.model_path)])
+        if context.model_object:
+            cmd.extend(["--model-object", str(context.model_object)])
         if context.log_info:
             context.log_info("Running Blender: {}".format(" ".join(cmd)))
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)

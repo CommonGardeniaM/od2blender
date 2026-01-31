@@ -41,6 +41,7 @@ uv run od2blender /path/to/video.mp4
 - `--pose3d` : MediaPipeで3D姿勢推定を実行し、関節Empty/アーマチュアを生成
 - `--pose-scale FLOAT` : 3D姿勢のスケール（既定: 1.0）
 - `--pose-model PATH` : pose landmarkerモデル(.task)のパス（既定: 自動ダウンロード）
+- `--test-motion` : モデルを初期姿勢から屈ませて戻すテストモーションを生成（`--model` 時のみ）
 
 出力
 ----

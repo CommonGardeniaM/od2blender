@@ -1,0 +1,515 @@
+Bone names from: C:\Users\commo\Desktop\dev\python\od2blender\Male Lowpoly Mesh.blend
+Total bones found: 236
+======================================================================
+
+
+Left Side (.L) (16):
+  FMod_Limits
+  Finger1.L
+  Finger11.L
+  Finger2.L
+  Finger22.L
+  Foot.L
+  Hand.L
+  IK.L
+  LowerArm.L
+  LowerLeg.L
+  PullTarget.L
+  Shoulder.L
+  Thumb.L
+  Thumb2.L
+  UpperArm.L
+  UpperLeg.L
+
+Right Side (.R) (15):
+  Finger1.R
+  Finger11.R
+  Finger2.R
+  Finger22.R
+  Foot.R
+  Hand.R
+  IK.R
+  LowerArm.R
+  LowerLeg.R
+  PullTarget.R
+  Shoulder.R
+  Thumb.R
+  Thumb2.R
+  UpperArm.R
+  UpperLeg.R
+
+IK Bones (4):
+  IK.L
+  IK.R
+  bIKParam
+  pose_ik_segments
+
+Target Bones (27):
+  DriverTarget
+  ParticleTarget
+  PullTarget.L
+  PullTarget.R
+  auxTarget
+  aux_target
+  bake_target
+  courant_target
+  deform_target
+  density_target
+  floor_targets
+  kinematic_targets
+  motor_ang_target_velocity
+  motor_lin_target_velocity
+  num_targets
+  proximity_ob_target
+  rigify_target_rig
+  snap_target
+  target
+  target_element
+  target_material
+  target_ob
+  target_psys
+  target_rot
+  target_verts_num
+  target_volume
+  targets
+
+Root/Torso/Main (8):
+  collection_root_count
+  hierarchy_root
+  idroot
+  max_rootbone
+  rad_root
+  root_group_ptr
+  root_panel
+  rootbone
+
+Leg Bones (11):
+  BoidRuleGoalAvoid
+  FileGlobal
+  Foot.L
+  Foot.R
+  LowerLeg.L
+  LowerLeg.R
+  UpperLeg.L
+  UpperLeg.R
+  autoexec_paths
+  flag_legacy
+  use_undo_legacy
+
+Arm Bones (47):
+  ARArmature2
+  AnimatiARArmature2
+  Armature
+  GPUBatchHandle
+  GPUVertBufHandle
+  Hand.L
+  Hand.R
+  ImplicitSharingInfoHandle
+  LowerArm.L
+  LowerArm.R
+  SeqRetimingHandle
+  Shoulder.L
+  Shoulder.R
+  UpperArm.L
+  UpperArm.R
+  action_slot_handle
+  arm_roll
+  armature
+  auto_handle_type
+  bArmature
+  bNodeTypeHandle
+  coll_parms
+  default_handle_type
+  event_last_handled
+  event_queue_check_drag_handled
+  gizmo_show_armature
+  handle
+  handle_display
+  handle_readers
+  handle_type
+  handle_vertex_size
+  handlers
+  jk_arm
+  keyhandles_new
+  last_slot_handle
+  modalhandlers
+  ob_arm
+  playback_handle
+  retiming_handle_num
+  retiming_handles
+  sim_parms
+  skip_handling
+  slot_handle
+  sound_scrub_handle
+  speaker_handle
+  speaker_handles
+  tmp_slot_handle
+
+Spine/Head (10):
+  Head
+  Neck
+  Pelvis
+  Torso
+  bb_vel_head
+  headerstr
+  headertype
+  headtail
+  look_ahead
+  rad_head
+
+Other (116):
+  BuildEff
+  Default
+  ExprPyLike_Parsed
+  FluidEffectorSettings
+  LatticeDeformData
+  MDefCell
+  MDefInfluence
+  MDeformVert
+  MDeformWeight
+  NodeDefocus
+  NodeEnumDefinition
+  NodeFrame
+  NodeFunctionCompare
+  NodePlaneTrackDeformData
+  PartDeflect
+  SDefBind
+  SDefVert
+  UserDef
+  actdef
+  autoik_chainlen
+  bDeformGroup
+  bbone_deform_mats
+  before_cycles
+  before_mode
+  boundary_deform_type
+  cloth_deform_type
+  ctrl
+  def
+  def_nr
+  def_var
+  default_algorithm_flag
+  default_array
+  default_array_len
+  default_attribute_name
+  default_color_attribute
+  default_flag
+  default_frames_limit
+  default_group_node_width
+  default_input
+  default_margin
+  default_minimum_correlation
+  default_motion_model
+  default_pattern_match
+  default_pattern_size
+  default_search_size
+  default_value
+  default_weight
+  default_weight_a
+  default_weight_b
+  defaultconf
+  defaxis
+  defbase
+  defgoal
+  defgrp_factor
+  deflect
+  deform_axis
+  deform_dual_quat
+  deform_mode
+  deformflag
+  elastic_deform_type
+  enum_definition
+  face_sets_color_default
+  gridlines_lower_bound
+  gridlines_upper_bound
+  horg
+  ikdata
+  ikflag
+  iklinweight
+  ikparam
+  ikrotweight
+  iksolver
+  ikstretch
+  iktree
+  lattice_deform_data
+  light_set_membership
+  limchan
+  limit_ang_x_lower
+  limit_ang_x_upper
+  limit_ang_y_lower
+  limit_ang_y_upper
+  limit_ang_z_lower
+  limit_ang_z_upper
+  limit_lin_x_lower
+  limit_lin_x_upper
+  limit_lin_y_lower
+  limit_lin_y_upper
+  limit_lin_z_lower
+  limit_lin_z_upper
+  mesh_concave_lower
+  mesh_concave_upper
+  num_frames_before
+  orglength
+  pdef_cfrict
+  pdef_damp
+  pdef_frict
+  pdef_perm
+  pdef_rdamp
+  pdef_rfrict
+  pdef_sbdamp
+  pdef_sbift
+  pdef_sboft
+  pdef_stickness
+  points_deform
+  pole_merge_angle_from
+  pole_merge_angle_to
+  poleangle
+  poletar
+  pose_deform_type
+  refkey
+  shadow_set_membership
+  siktree
+  slide_deform_type
+  smear_deform_type
+  smooth_deform_type
+  snake_hook_deform_type
+  wcol_pulldown
+
+
+All bones (alphabetical):
+ARArmature2
+AnimatiARArmature2
+Armature
+BoidRuleGoalAvoid
+BuildEff
+Default
+DriverTarget
+ExprPyLike_Parsed
+FMod_Limits
+FileGlobal
+Finger1.L
+Finger1.R
+Finger11.L
+Finger11.R
+Finger2.L
+Finger2.R
+Finger22.L
+Finger22.R
+FluidEffectorSettings
+Foot.L
+Foot.R
+GPUBatchHandle
+GPUVertBufHandle
+Hand.L
+Hand.R
+Head
+IK.L
+IK.R
+ImplicitSharingInfoHandle
+LatticeDeformData
+LowerArm.L
+LowerArm.R
+LowerLeg.L
+LowerLeg.R
+MDefCell
+MDefInfluence
+MDeformVert
+MDeformWeight
+Neck
+NodeDefocus
+NodeEnumDefinition
+NodeFrame
+NodeFunctionCompare
+NodePlaneTrackDeformData
+PartDeflect
+ParticleTarget
+Pelvis
+PullTarget.L
+PullTarget.R
+SDefBind
+SDefVert
+SeqRetimingHandle
+Shoulder.L
+Shoulder.R
+Thumb.L
+Thumb.R
+Thumb2.L
+Thumb2.R
+Torso
+UpperArm.L
+UpperArm.R
+UpperLeg.L
+UpperLeg.R
+UserDef
+actdef
+action_slot_handle
+arm_roll
+armature
+auto_handle_type
+autoexec_paths
+autoik_chainlen
+auxTarget
+aux_target
+bArmature
+bDeformGroup
+bIKParam
+bNodeTypeHandle
+bake_target
+bb_vel_head
+bbone_deform_mats
+before_cycles
+before_mode
+boundary_deform_type
+cloth_deform_type
+coll_parms
+collection_root_count
+courant_target
+ctrl
+def
+def_nr
+def_var
+default_algorithm_flag
+default_array
+default_array_len
+default_attribute_name
+default_color_attribute
+default_flag
+default_frames_limit
+default_group_node_width
+default_handle_type
+default_input
+default_margin
+default_minimum_correlation
+default_motion_model
+default_pattern_match
+default_pattern_size
+default_search_size
+default_value
+default_weight
+default_weight_a
+default_weight_b
+defaultconf
+defaxis
+defbase
+defgoal
+defgrp_factor
+deflect
+deform_axis
+deform_dual_quat
+deform_mode
+deform_target
+deformflag
+density_target
+elastic_deform_type
+enum_definition
+event_last_handled
+event_queue_check_drag_handled
+face_sets_color_default
+flag_legacy
+floor_targets
+gizmo_show_armature
+gridlines_lower_bound
+gridlines_upper_bound
+handle
+handle_display
+handle_readers
+handle_type
+handle_vertex_size
+handlers
+headerstr
+headertype
+headtail
+hierarchy_root
+horg
+idroot
+ikdata
+ikflag
+iklinweight
+ikparam
+ikrotweight
+iksolver
+ikstretch
+iktree
+jk_arm
+keyhandles_new
+kinematic_targets
+last_slot_handle
+lattice_deform_data
+light_set_membership
+limchan
+limit_ang_x_lower
+limit_ang_x_upper
+limit_ang_y_lower
+limit_ang_y_upper
+limit_ang_z_lower
+limit_ang_z_upper
+limit_lin_x_lower
+limit_lin_x_upper
+limit_lin_y_lower
+limit_lin_y_upper
+limit_lin_z_lower
+limit_lin_z_upper
+look_ahead
+max_rootbone
+mesh_concave_lower
+mesh_concave_upper
+modalhandlers
+motor_ang_target_velocity
+motor_lin_target_velocity
+num_frames_before
+num_targets
+ob_arm
+orglength
+pdef_cfrict
+pdef_damp
+pdef_frict
+pdef_perm
+pdef_rdamp
+pdef_rfrict
+pdef_sbdamp
+pdef_sbift
+pdef_sboft
+pdef_stickness
+playback_handle
+points_deform
+pole_merge_angle_from
+pole_merge_angle_to
+poleangle
+poletar
+pose_deform_type
+pose_ik_segments
+proximity_ob_target
+rad_head
+rad_root
+refkey
+retiming_handle_num
+retiming_handles
+rigify_target_rig
+root_group_ptr
+root_panel
+rootbone
+shadow_set_membership
+siktree
+sim_parms
+skip_handling
+slide_deform_type
+slot_handle
+smear_deform_type
+smooth_deform_type
+snake_hook_deform_type
+snap_target
+sound_scrub_handle
+speaker_handle
+speaker_handles
+target
+target_element
+target_material
+target_ob
+target_psys
+target_rot
+target_verts_num
+target_volume
+targets
+tmp_slot_handle
+use_undo_legacy
+wcol_pulldown

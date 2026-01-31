@@ -25,6 +25,8 @@ class Pose3DProjectorProcessor(FrameProcessor):
         plane_width_value = context.settings.get("plane_width", 2.0)
         z_depth_value = context.settings.get("z_depth", 0.01)
         scale_value = context.settings.get("pose_scale", 1.0)
+        pose3d_source = context.settings.get("pose3d_source")
+        keep_raw = bool(context.settings.get("pose3d_keep_raw")) or pose3d_source == "raw"
         plane_width = float(plane_width_value) if plane_width_value is not None else 2.0
         z_depth = float(z_depth_value) if z_depth_value is not None else 0.01
         scale = float(scale_value) if scale_value is not None else 1.0
@@ -59,13 +61,16 @@ class Pose3DProjectorProcessor(FrameProcessor):
                     landmarks.append([proj_x, proj_y, proj_z, visibility])
                 poses_out.append({"id": int(pose.get("id", 0)), "landmarks": landmarks})
             frame["poses3d"] = poses_out
-            frame.pop("poses3d_raw", None)
+            if not keep_raw:
+                frame.pop("poses3d_raw", None)
         return frames
 
     def describe(self, context: ProcessorContext) -> dict | None:
         plane_width_value = context.settings.get("plane_width", 2.0)
         z_depth_value = context.settings.get("z_depth", 0.01)
         scale_value = context.settings.get("pose_scale", 1.0)
+        pose3d_source = context.settings.get("pose3d_source")
+        keep_raw = bool(context.settings.get("pose3d_keep_raw")) or pose3d_source == "raw"
         return {
             "id": self.id,
             "params": {
@@ -74,5 +79,6 @@ class Pose3DProjectorProcessor(FrameProcessor):
                 else 2.0,
                 "z_depth": float(z_depth_value) if z_depth_value is not None else 0.01,
                 "scale": float(scale_value) if scale_value is not None else 1.0,
+                "keep_raw": keep_raw,
             },
         }

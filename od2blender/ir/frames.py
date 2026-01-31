@@ -26,6 +26,9 @@ def normalize_frames(frames: list[dict]) -> list[dict]:
             "detections": detections,
             "poses3d": poses3d,
         }
+        poses3d_raw = frame.get("poses3d_raw")
+        if isinstance(poses3d_raw, list):
+            payload["poses3d_raw"] = poses3d_raw
         extra = frame.get("extra")
         if isinstance(extra, dict) and extra:
             payload["extra"] = dict(extra)

@@ -144,6 +144,10 @@ def run_pipeline(
     exporters: list[str] | None,
     pose_scale: float,
     pose_model: Path | None,
+    pose3d_source: str = "projected",
+    model_path: Path | None = None,
+    model_object: str | None = None,
+    test_motion: bool = False,
 ) -> int:
     start_time = time.monotonic()
     started_at = datetime.now(timezone.utc)
@@ -257,10 +261,25 @@ def run_pipeline(
                 return int(ExitCode.TRACK_FAILURE)
             processor_instances.append(processor)
 
+        pose3d_source_value = (pose3d_source or "projected").lower().strip()
+        if pose3d_source_value not in {"projected", "raw"}:
+            logger.warning(
+                "Unknown pose3d_source '{}', using 'projected'",
+                pose3d_source_value,
+            )
+            pose3d_source_value = "projected"
+
+        model_path_resolved = None
+        model_object_value = None
+        if model_path is not None:
+            model_path_resolved = model_path.expanduser().resolve()
+            model_object_value = model_object
+
         processor_settings = {
             "plane_width": DEFAULT_PLANE_WIDTH,
             "z_depth": DEFAULT_Z_DEPTH,
             "pose_scale": pose_scale,
+            "pose3d_source": pose3d_source_value,
         }
         processor_context = ProcessorContext(
             video_meta=video_meta,
@@ -319,6 +338,11 @@ def run_pipeline(
             plane_width=DEFAULT_PLANE_WIDTH,
             z_depth=DEFAULT_Z_DEPTH,
             open_blender=open_blender,
+            pose_scale=pose_scale,
+            pose3d_source=pose3d_source_value,
+            model_path=model_path_resolved,
+            model_object=model_object_value,
+            test_motion=test_motion,
             log_info=logger.info,
             log_warn=logger.warning,
         )
