@@ -1,0 +1,1036 @@
+{
+  "blend_path": "C:\\Users\\commo\\Desktop\\dev\\python\\od2blender\\guy.blend",
+  "meshes": [
+    {
+      "name": "Cube",
+      "data_name": "Cube",
+      "vertex_count": 50818,
+      "vertex_group_count": 29,
+      "vertex_group_names": [
+        "spine",
+        "spine.001",
+        "spine.002",
+        "spine.003",
+        "spine.004",
+        "spine.005",
+        "spine.006",
+        "shoulder.L",
+        "upper_arm.L",
+        "forearm.L",
+        "hand.L",
+        "shoulder.R",
+        "upper_arm.R",
+        "forearm.R",
+        "hand.R",
+        "breast.L",
+        "breast.R",
+        "pelvis.L",
+        "pelvis.R",
+        "thigh.L",
+        "shin.L",
+        "foot.L",
+        "toe.L",
+        "heel.02.L",
+        "thigh.R",
+        "shin.R",
+        "foot.R",
+        "toe.R",
+        "heel.02.R"
+      ],
+      "vertex_group_stats": [
+        {
+          "name": "spine.006",
+          "index": 6,
+          "vertex_count": 30561,
+          "weight_total": 24184.070686334406,
+          "weight_max": 0.9974368810653687
+        },
+        {
+          "name": "shoulder.R",
+          "index": 11,
+          "vertex_count": 16544,
+          "weight_total": 2372.129416817581,
+          "weight_max": 0.8385195136070251
+        },
+        {
+          "name": "shoulder.L",
+          "index": 7,
+          "vertex_count": 15536,
+          "weight_total": 2246.6738451334386,
+          "weight_max": 0.7965295314788818
+        },
+        {
+          "name": "upper_arm.L",
+          "index": 8,
+          "vertex_count": 10139,
+          "weight_total": 2575.9232727943704,
+          "weight_max": 1.0
+        },
+        {
+          "name": "upper_arm.R",
+          "index": 12,
+          "vertex_count": 9271,
+          "weight_total": 1897.5654923581787,
+          "weight_max": 1.0
+        },
+        {
+          "name": "forearm.L",
+          "index": 9,
+          "vertex_count": 8113,
+          "weight_total": 1363.4861502485135,
+          "weight_max": 1.0
+        },
+        {
+          "name": "shin.L",
+          "index": 20,
+          "vertex_count": 7939,
+          "weight_total": 2000.714146743429,
+          "weight_max": 1.0
+        },
+        {
+          "name": "thigh.R",
+          "index": 24,
+          "vertex_count": 6829,
+          "weight_total": 635.1559072311741,
+          "weight_max": 1.0
+        },
+        {
+          "name": "pelvis.L",
+          "index": 17,
+          "vertex_count": 6448,
+          "weight_total": 857.075044178011,
+          "weight_max": 0.6689717769622803
+        },
+        {
+          "name": "pelvis.R",
+          "index": 18,
+          "vertex_count": 6448,
+          "weight_total": 853.2598428590281,
+          "weight_max": 0.6772928833961487
+        },
+        {
+          "name": "shin.R",
+          "index": 25,
+          "vertex_count": 6445,
+          "weight_total": 2036.1607720902102,
+          "weight_max": 1.0
+        },
+        {
+          "name": "hand.L",
+          "index": 10,
+          "vertex_count": 5569,
+          "weight_total": 2506.239906388655,
+          "weight_max": 0.9729384183883667
+        },
+        {
+          "name": "thigh.L",
+          "index": 19,
+          "vertex_count": 5449,
+          "weight_total": 450.28487277293976,
+          "weight_max": 0.9999979138374329
+        },
+        {
+          "name": "forearm.R",
+          "index": 13,
+          "vertex_count": 5285,
+          "weight_total": 2251.508738158702,
+          "weight_max": 0.9999998807907104
+        },
+        {
+          "name": "spine.001",
+          "index": 1,
+          "vertex_count": 4960,
+          "weight_total": 535.882571923139,
+          "weight_max": 0.7405424118041992
+        },
+        {
+          "name": "spine.003",
+          "index": 3,
+          "vertex_count": 4929,
+          "weight_total": 413.81151752371807,
+          "weight_max": 0.7128050327301025
+        },
+        {
+          "name": "hand.R",
+          "index": 14,
+          "vertex_count": 3505,
+          "weight_total": 514.9454806483263,
+          "weight_max": 0.8713271021842957
+        },
+        {
+          "name": "breast.L",
+          "index": 15,
+          "vertex_count": 3425,
+          "weight_total": 238.44852258780156,
+          "weight_max": 0.6408705115318298
+        },
+        {
+          "name": "spine.004",
+          "index": 4,
+          "vertex_count": 2945,
+          "weight_total": 130.8092807465291,
+          "weight_max": 0.33645084500312805
+        },
+        {
+          "name": "heel.02.L",
+          "index": 23,
+          "vertex_count": 2825,
+          "weight_total": 736.1669983058382,
+          "weight_max": 0.9299759268760681
+        },
+        {
+          "name": "heel.02.R",
+          "index": 28,
+          "vertex_count": 2569,
+          "weight_total": 586.4683120996197,
+          "weight_max": 0.9086283445358276
+        },
+        {
+          "name": "spine",
+          "index": 0,
+          "vertex_count": 2417,
+          "weight_total": 226.2119826041162,
+          "weight_max": 0.29923808574676514
+        },
+        {
+          "name": "foot.R",
+          "index": 26,
+          "vertex_count": 2297,
+          "weight_total": 350.54186170767935,
+          "weight_max": 0.8781000971794128
+        },
+        {
+          "name": "foot.L",
+          "index": 21,
+          "vertex_count": 1785,
+          "weight_total": 199.6375453497094,
+          "weight_max": 0.7704105377197266
+        },
+        {
+          "name": "spine.002",
+          "index": 2,
+          "vertex_count": 0,
+          "weight_total": 0.0,
+          "weight_max": 0.0
+        },
+        {
+          "name": "spine.005",
+          "index": 5,
+          "vertex_count": 0,
+          "weight_total": 0.0,
+          "weight_max": 0.0
+        },
+        {
+          "name": "breast.R",
+          "index": 16,
+          "vertex_count": 0,
+          "weight_total": 0.0,
+          "weight_max": 0.0
+        },
+        {
+          "name": "toe.L",
+          "index": 22,
+          "vertex_count": 0,
+          "weight_total": 0.0,
+          "weight_max": 0.0
+        },
+        {
+          "name": "toe.R",
+          "index": 27,
+          "vertex_count": 0,
+          "weight_total": 0.0,
+          "weight_max": 0.0
+        }
+      ],
+      "weighted_vertex_count": 50818,
+      "weight_assignment_count": 172233,
+      "has_armature_modifier": true,
+      "armature_modifiers": [
+        {
+          "name": "Armature",
+          "object": "metarig",
+          "use_vertex_groups": true,
+          "use_bone_envelopes": false,
+          "use_deform_preserve_volume": false
+        }
+      ],
+      "modifier_stack": [
+        {
+          "name": "Armature",
+          "type": "ARMATURE"
+        }
+      ],
+      "parent_armature": "metarig",
+      "parent_type": "ARMATURE",
+      "parent_bone": "",
+      "shape_keys": [],
+      "materials": [
+        "Material"
+      ],
+      "transform": {
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "bounds": {
+        "min": [
+          -2.7980055809020996,
+          -0.7992608547210693,
+          -1.7000112533569336
+        ],
+        "max": [
+          2.944554567337036,
+          0.7992608547210693,
+          5.061601161956787
+        ],
+        "size": [
+          5.742560386657715,
+          1.5985217094421387,
+          6.761612415313721
+        ],
+        "center": [
+          0.07327449321746826,
+          0.0,
+          1.6807949542999268
+        ]
+      }
+    }
+  ],
+  "armatures": [
+    {
+      "name": "metarig",
+      "bone_count": 29,
+      "bone_names": [
+        "spine",
+        "spine.001",
+        "spine.002",
+        "spine.003",
+        "spine.004",
+        "spine.005",
+        "spine.006",
+        "shoulder.L",
+        "upper_arm.L",
+        "forearm.L",
+        "hand.L",
+        "shoulder.R",
+        "upper_arm.R",
+        "forearm.R",
+        "hand.R",
+        "breast.L",
+        "breast.R",
+        "pelvis.L",
+        "pelvis.R",
+        "thigh.L",
+        "shin.L",
+        "foot.L",
+        "toe.L",
+        "heel.02.L",
+        "thigh.R",
+        "shin.R",
+        "foot.R",
+        "toe.R",
+        "heel.02.R"
+      ],
+      "bone_hierarchy": [
+        {
+          "name": "spine",
+          "parent": null,
+          "children": [
+            "spine.001",
+            "pelvis.L",
+            "pelvis.R",
+            "thigh.L",
+            "thigh.R"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            0.03312622010707855,
+            0.7445871233940125
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            0.010395863093435764,
+            0.8327570557594299
+          ],
+          "length": 0.09105277061462402,
+          "use_deform": true
+        },
+        {
+          "name": "spine.001",
+          "parent": "spine",
+          "children": [
+            "spine.002"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            0.010395863093435764,
+            0.8327570557594299
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            0.00034665281418710947,
+            0.9138684868812561
+          ],
+          "length": 0.08173158019781113,
+          "use_deform": true
+        },
+        {
+          "name": "spine.002",
+          "parent": "spine.001",
+          "children": [
+            "spine.003"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            0.00034665281418710947,
+            0.9138684868812561
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            0.003636572975665331,
+            1.0172319412231445
+          ],
+          "length": 0.10341580212116241,
+          "use_deform": true
+        },
+        {
+          "name": "spine.003",
+          "parent": "spine.002",
+          "children": [
+            "spine.004",
+            "shoulder.L",
+            "shoulder.R",
+            "breast.L",
+            "breast.R"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            0.003636572975665331,
+            1.0172319412231445
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            0.006926493253558874,
+            1.1323790550231934
+          ],
+          "length": 0.11519410461187363,
+          "use_deform": true
+        },
+        {
+          "name": "spine.004",
+          "parent": "spine.003",
+          "children": [
+            "spine.005"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            0.006926493253558874,
+            1.1323790550231934
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            -0.007668789476156235,
+            1.1691663265228271
+          ],
+          "length": 0.039576832205057144,
+          "use_deform": true
+        },
+        {
+          "name": "spine.005",
+          "parent": "spine.004",
+          "children": [
+            "spine.006"
+          ],
+          "head": [
+            3.7859665402706355e-10,
+            -0.007668789476156235,
+            1.1691663265228271
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            -0.014667348004877567,
+            1.2060134410858154
+          ],
+          "length": 0.0375058613717556,
+          "use_deform": true
+        },
+        {
+          "name": "spine.006",
+          "parent": "spine.005",
+          "children": [],
+          "head": [
+            3.7859665402706355e-10,
+            -0.014667348004877567,
+            1.2060134410858154
+          ],
+          "tail": [
+            3.7859665402706355e-10,
+            -0.014667348004877567,
+            1.5478742122650146
+          ],
+          "length": 0.3418608009815216,
+          "use_deform": true
+        },
+        {
+          "name": "shoulder.L",
+          "parent": "spine.003",
+          "children": [
+            "upper_arm.L"
+          ],
+          "head": [
+            0.015629904344677925,
+            -0.040807247161865234,
+            1.1817961931228638
+          ],
+          "tail": [
+            0.27461692690849304,
+            0.012369846925139427,
+            1.203592300415039
+          ],
+          "length": 0.265286922454834,
+          "use_deform": true
+        },
+        {
+          "name": "upper_arm.L",
+          "parent": "shoulder.L",
+          "children": [
+            "forearm.L"
+          ],
+          "head": [
+            0.29010945558547974,
+            0.016078485175967216,
+            1.191389560699463
+          ],
+          "tail": [
+            0.4987257719039917,
+            0.05304525047540665,
+            1.1923540830612183
+          ],
+          "length": 0.2118684947490692,
+          "use_deform": true
+        },
+        {
+          "name": "forearm.L",
+          "parent": "upper_arm.L",
+          "children": [
+            "hand.L"
+          ],
+          "head": [
+            0.4987257719039917,
+            0.05304525047540665,
+            1.1923540830612183
+          ],
+          "tail": [
+            0.6541688442230225,
+            0.0295372623950243,
+            1.1906746625900269
+          ],
+          "length": 0.15721961855888367,
+          "use_deform": true
+        },
+        {
+          "name": "hand.L",
+          "parent": "forearm.L",
+          "children": [],
+          "head": [
+            0.6541688442230225,
+            0.0295372623950243,
+            1.1906746625900269
+          ],
+          "tail": [
+            0.7017700672149658,
+            0.024751923978328705,
+            1.1874507665634155
+          ],
+          "length": 0.04794967174530029,
+          "use_deform": true
+        },
+        {
+          "name": "shoulder.R",
+          "parent": "spine.003",
+          "children": [
+            "upper_arm.R"
+          ],
+          "head": [
+            -0.015629904344677925,
+            -0.040807247161865234,
+            1.1817961931228638
+          ],
+          "tail": [
+            -0.27461692690849304,
+            0.012369846925139427,
+            1.203592300415039
+          ],
+          "length": 0.265286922454834,
+          "use_deform": true
+        },
+        {
+          "name": "upper_arm.R",
+          "parent": "shoulder.R",
+          "children": [
+            "forearm.R"
+          ],
+          "head": [
+            -0.29010945558547974,
+            0.016078485175967216,
+            1.191389560699463
+          ],
+          "tail": [
+            -0.4987257719039917,
+            0.05304525047540665,
+            1.1923540830612183
+          ],
+          "length": 0.2118684947490692,
+          "use_deform": true
+        },
+        {
+          "name": "forearm.R",
+          "parent": "upper_arm.R",
+          "children": [
+            "hand.R"
+          ],
+          "head": [
+            -0.4987257719039917,
+            0.05304525047540665,
+            1.1923540830612183
+          ],
+          "tail": [
+            -0.6541688442230225,
+            0.0295372623950243,
+            1.1906746625900269
+          ],
+          "length": 0.15721961855888367,
+          "use_deform": true
+        },
+        {
+          "name": "hand.R",
+          "parent": "forearm.R",
+          "children": [],
+          "head": [
+            -0.6541688442230225,
+            0.0295372623950243,
+            1.1906746625900269
+          ],
+          "tail": [
+            -0.7017700672149658,
+            0.024751923978328705,
+            1.1874507665634155
+          ],
+          "length": 0.04794967174530029,
+          "use_deform": true
+        },
+        {
+          "name": "breast.L",
+          "parent": "spine.003",
+          "children": [],
+          "head": [
+            0.07082300633192062,
+            0.029118500649929047,
+            1.0135829448699951
+          ],
+          "tail": [
+            0.07082300633192062,
+            -0.05414638668298721,
+            1.0135829448699951
+          ],
+          "length": 0.08326489478349686,
+          "use_deform": true
+        },
+        {
+          "name": "breast.R",
+          "parent": "spine.003",
+          "children": [],
+          "head": [
+            -0.07082300633192062,
+            0.029118500649929047,
+            1.0135829448699951
+          ],
+          "tail": [
+            -0.07082300633192062,
+            -0.05414638668298721,
+            1.0135829448699951
+          ],
+          "length": 0.08326489478349686,
+          "use_deform": true
+        },
+        {
+          "name": "pelvis.L",
+          "parent": "spine",
+          "children": [],
+          "head": [
+            3.7859665402706355e-10,
+            0.03312622010707855,
+            0.7445871233940125
+          ],
+          "tail": [
+            0.0665162056684494,
+            -0.026869958266615868,
+            0.8303644061088562
+          ],
+          "length": 0.1240229457616806,
+          "use_deform": true
+        },
+        {
+          "name": "pelvis.R",
+          "parent": "spine",
+          "children": [],
+          "head": [
+            -3.7859665402706355e-10,
+            0.03312622010707855,
+            0.7445871233940125
+          ],
+          "tail": [
+            -0.0665162056684494,
+            -0.026869958266615868,
+            0.8303644061088562
+          ],
+          "length": 0.1240229457616806,
+          "use_deform": true
+        },
+        {
+          "name": "thigh.L",
+          "parent": "spine",
+          "children": [
+            "shin.L"
+          ],
+          "head": [
+            0.17882877588272095,
+            0.007524660788476467,
+            0.6505969762802124
+          ],
+          "tail": [
+            0.17882877588272095,
+            -0.017000198364257812,
+            0.33069702982902527
+          ],
+          "length": 0.32083871960639954,
+          "use_deform": true
+        },
+        {
+          "name": "shin.L",
+          "parent": "thigh.L",
+          "children": [
+            "foot.L"
+          ],
+          "head": [
+            0.17882877588272095,
+            -0.017000198364257812,
+            0.33069702982902527
+          ],
+          "tail": [
+            0.17882877588272095,
+            0.009797696024179459,
+            0.06032547354698181
+          ],
+          "length": 0.2716963589191437,
+          "use_deform": true
+        },
+        {
+          "name": "foot.L",
+          "parent": "shin.L",
+          "children": [
+            "toe.L",
+            "heel.02.L"
+          ],
+          "head": [
+            0.17882877588272095,
+            0.009797696024179459,
+            0.06032547354698181
+          ],
+          "tail": [
+            0.17882877588272095,
+            -0.055761437863111496,
+            0.019351035356521606
+          ],
+          "length": 0.07731034606695175,
+          "use_deform": true
+        },
+        {
+          "name": "toe.L",
+          "parent": "foot.L",
+          "children": [],
+          "head": [
+            0.17882877588272095,
+            -0.055761437863111496,
+            0.019351035356521606
+          ],
+          "tail": [
+            0.17882877588272095,
+            -0.09595828503370285,
+            0.019351035356521606
+          ],
+          "length": 0.04019678011536598,
+          "use_deform": true
+        },
+        {
+          "name": "heel.02.L",
+          "parent": "foot.L",
+          "children": [],
+          "head": [
+            0.035890039056539536,
+            0.027563264593482018,
+            0.009361594915390015
+          ],
+          "tail": [
+            0.20395180583000183,
+            0.027563264593482018,
+            0.009361594915390015
+          ],
+          "length": 0.168061763048172,
+          "use_deform": true
+        },
+        {
+          "name": "thigh.R",
+          "parent": "spine",
+          "children": [
+            "shin.R"
+          ],
+          "head": [
+            -0.17882877588272095,
+            0.007524660788476467,
+            0.6505969762802124
+          ],
+          "tail": [
+            -0.17882877588272095,
+            -0.017000198364257812,
+            0.33069702982902527
+          ],
+          "length": 0.32083871960639954,
+          "use_deform": true
+        },
+        {
+          "name": "shin.R",
+          "parent": "thigh.R",
+          "children": [
+            "foot.R"
+          ],
+          "head": [
+            -0.17882877588272095,
+            -0.017000198364257812,
+            0.33069702982902527
+          ],
+          "tail": [
+            -0.17882877588272095,
+            0.009797696024179459,
+            0.06032547354698181
+          ],
+          "length": 0.2716963291168213,
+          "use_deform": true
+        },
+        {
+          "name": "foot.R",
+          "parent": "shin.R",
+          "children": [
+            "toe.R",
+            "heel.02.R"
+          ],
+          "head": [
+            -0.17882877588272095,
+            0.009797696024179459,
+            0.06032547354698181
+          ],
+          "tail": [
+            -0.17882877588272095,
+            -0.055761437863111496,
+            0.019351035356521606
+          ],
+          "length": 0.07731036841869354,
+          "use_deform": true
+        },
+        {
+          "name": "toe.R",
+          "parent": "foot.R",
+          "children": [],
+          "head": [
+            -0.17882877588272095,
+            -0.055761437863111496,
+            0.019351035356521606
+          ],
+          "tail": [
+            -0.17882877588272095,
+            -0.09595828503370285,
+            0.019351035356521606
+          ],
+          "length": 0.04019680246710777,
+          "use_deform": true
+        },
+        {
+          "name": "heel.02.R",
+          "parent": "foot.R",
+          "children": [],
+          "head": [
+            -0.035890039056539536,
+            0.027563264593482018,
+            0.009361594915390015
+          ],
+          "tail": [
+            -0.20395180583000183,
+            0.027563264593482018,
+            0.009361594915390015
+          ],
+          "length": 0.168061763048172,
+          "use_deform": true
+        }
+      ],
+      "pose_constraints": [],
+      "prefix_counts": {
+        "CTRL": 0,
+        "DEF": 0,
+        "ORG": 0,
+        "MCH": 0
+      },
+      "side_counts": {
+        "L": 11,
+        "R": 11
+      },
+      "ik_count": 0,
+      "fk_count": 0,
+      "rigify_score": 1,
+      "rigify_like": false,
+      "rig_id": null,
+      "controls_matched": {
+        "root": "pelvis.L",
+        "spine": "spine",
+        "hand_ik.L": "hand.L",
+        "hand_ik.R": "hand.R",
+        "foot_ik.L": "foot.L",
+        "foot_ik.R": "foot.R"
+      },
+      "controls_missing": [
+        "chest",
+        "head",
+        "pole.L",
+        "pole.R"
+      ],
+      "bone_collections": [
+        {
+          "name": "Layer 4",
+          "bone_count": 13,
+          "bones": [
+            "spine",
+            "spine.001",
+            "spine.002",
+            "spine.003",
+            "spine.004",
+            "spine.005",
+            "spine.006",
+            "shoulder.L",
+            "shoulder.R",
+            "breast.L",
+            "breast.R",
+            "pelvis.L",
+            "pelvis.R"
+          ]
+        },
+        {
+          "name": "Layer 8",
+          "bone_count": 3,
+          "bones": [
+            "upper_arm.L",
+            "forearm.L",
+            "hand.L"
+          ]
+        },
+        {
+          "name": "Layer 11",
+          "bone_count": 3,
+          "bones": [
+            "upper_arm.R",
+            "forearm.R",
+            "hand.R"
+          ]
+        },
+        {
+          "name": "Layer 14",
+          "bone_count": 5,
+          "bones": [
+            "thigh.L",
+            "shin.L",
+            "foot.L",
+            "toe.L",
+            "heel.02.L"
+          ]
+        },
+        {
+          "name": "Layer 17",
+          "bone_count": 5,
+          "bones": [
+            "thigh.R",
+            "shin.R",
+            "foot.R",
+            "toe.R",
+            "heel.02.R"
+          ]
+        }
+      ],
+      "transform": {
+        "location": [
+          0.0,
+          0.0,
+          -1.5537809133529663
+        ],
+        "rotation_euler": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          3.817584753036499,
+          3.817584753036499,
+          3.817584753036499
+        ]
+      },
+      "bounds": {
+        "min": [
+          -2.6790661811828613,
+          -0.3663288652896881,
+          -1.5180425643920898
+        ],
+        "max": [
+          2.6790661811828613,
+          0.20250466465950012,
+          4.35536003112793
+        ],
+        "size": [
+          5.358132362365723,
+          0.5688335299491882,
+          5.8734025955200195
+        ],
+        "center": [
+          0.0,
+          -0.081912100315094,
+          1.41865873336792
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "mesh": "Cube",
+    "armature": "metarig",
+    "controls_missing": [
+      "chest",
+      "head",
+      "pole.L",
+      "pole.R"
+    ],
+    "model_object_hint": "Cube",
+    "mesh_to_rig_height_ratio": 1.1512257682576008
+  },
+  "notes": [
+    "Mesh has vertex groups; existing weights may be present.",
+    "Mesh is already linked to an armature.",
+    "Rigify controls are missing or named differently."
+  ]
+}

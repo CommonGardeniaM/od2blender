@@ -136,23 +136,43 @@ def strip_mesh_rigging(mesh_obj: bpy.types.Object) -> None:
         mesh_obj.matrix_parent_inverse = Matrix.Identity(4)
 
 
-def import_model(model_path: Path, object_name: str | None) -> bpy.types.Object:
+def import_model(model_path: Path, object_name: str | None, extract_mesh_only: bool = False) -> bpy.types.Object:
     if not model_path.is_file():
         raise RuntimeError(f"Model path not found: {model_path}")
     ext = model_path.suffix.lower()
     loaded_objects: list[bpy.types.Object] = []
     if ext == ".blend":
-        with bpy.data.libraries.load(str(model_path), link=False) as (data_from, data_to):
-            if object_name:
-                if object_name not in data_from.objects:
-                    raise RuntimeError(f"Object '{object_name}' not found in {model_path}")
-                data_to.objects = [object_name]
-            else:
-                data_to.objects = list(data_from.objects)
-        loaded_objects = [obj for obj in data_to.objects if obj is not None]
-        for obj in loaded_objects:
-            if obj.name not in bpy.context.scene.objects:
-                bpy.context.scene.collection.objects.link(obj)
+        if extract_mesh_only:
+            # メッシュのみを抽出: ライブラリからメッシュオブジェクトだけを読み込み
+            with bpy.data.libraries.load(str(model_path), link=False) as (data_from, data_to):
+                if object_name:
+                    if object_name not in data_from.objects:
+                        raise RuntimeError(f"Object '{object_name}' not found in {model_path}")
+                    data_to.objects = [object_name]
+                else:
+                    # すべてのオブジェクトを読み込んで後でフィルタリング
+                    data_to.objects = list(data_from.objects)
+            # メッシュのみを抽出
+            all_loaded = [obj for obj in data_to.objects if obj is not None]
+            loaded_objects = [obj for obj in all_loaded if obj.type == "MESH"]
+            # メッシュ以外のオブジェクトを削除
+            for obj in all_loaded:
+                if obj.type != "MESH":
+                    bpy.data.objects.remove(obj, do_unlink=True)
+                elif obj.name not in bpy.context.scene.objects:
+                    bpy.context.scene.collection.objects.link(obj)
+        else:
+            with bpy.data.libraries.load(str(model_path), link=False) as (data_from, data_to):
+                if object_name:
+                    if object_name not in data_from.objects:
+                        raise RuntimeError(f"Object '{object_name}' not found in {model_path}")
+                    data_to.objects = [object_name]
+                else:
+                    data_to.objects = list(data_from.objects)
+            loaded_objects = [obj for obj in data_to.objects if obj is not None]
+            for obj in loaded_objects:
+                if obj.name not in bpy.context.scene.objects:
+                    bpy.context.scene.collection.objects.link(obj)
     else:
         before = {obj.name for obj in bpy.data.objects}
         if ext == ".fbx":

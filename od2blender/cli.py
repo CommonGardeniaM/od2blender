@@ -16,11 +16,82 @@ from od2blender.config import (
     save_default_paths,
 )
 from od2blender.pipeline import run_pipeline
+from od2blender.rigify import run_rigify_model
 
-app = typer.Typer(add_completion=False)
+app = typer.Typer(add_completion=False, no_args_is_help=True)
 
 
 @app.command()
+def rigify_model(
+    model_path: Path | None = typer.Argument(
+        None,
+        help="Path to the model file (default: from config)",
+    ),
+    out_path: Path | None = typer.Option(
+        None,
+        "--out",
+        help="Output .blend path (default: <model>_rigify.blend)",
+    ),
+    blender_path: Path | None = typer.Option(
+        None,
+        "--blender",
+        help="Blender executable path (default: config, PATH, or BLENDER_BIN)",
+    ),
+    model_object: str | None = typer.Option(
+        None,
+        "--model-object",
+        help="Object name inside the model file (optional)",
+    ),
+    keep_helpers: bool = typer.Option(
+        False,
+        "--keep-helpers",
+        help="Keep metarig and widget collections visible",
+    ),
+    open_blender: bool = typer.Option(
+        False,
+        "--open",
+        help="Open Blender UI after rigify generation",
+    ),
+) -> None:
+    if model_path is None:
+        model_path = get_default_model_path()
+    if blender_path is None:
+        blender_path = get_default_blender_path()
+    if model_object is None:
+        model_object = get_default_model_object()
+
+    if model_path is None:
+        typer.echo("Error: model_path is required (or set default in config)", err=True)
+        raise typer.Exit(code=1)
+
+    try:
+        output_path = run_rigify_model(
+            model_path=model_path,
+            out_path=out_path,
+            blender_path=blender_path,
+            model_object=model_object,
+            keep_helpers=keep_helpers,
+            open_blender=open_blender,
+            log_info=typer.echo,
+            log_warn=lambda msg: typer.echo(msg, err=True),
+        )
+    except FileNotFoundError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    except RuntimeError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    save_default_paths(
+        video_path=None,
+        blender_path=blender_path,
+        model_path=model_path,
+        model_object=model_object,
+    )
+    typer.echo(f"Rigify model saved: {output_path}")
+
+
+@app.command(name="run")
 def main(
     video_path: Path | None = typer.Argument(
         None,
