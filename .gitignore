@@ -1,0 +1,47 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# od2blender outputs
+*_od2blender/
+media/
+run.log
+tracks.json
+meta.json
+scene.blend
+*.blend
+
+# Pytest
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# User config
+.config/
+
+# Media files
+*.mp4
+*.webm
+*.avi
+*.mov
+
+# Model files
+*.pt
+*.pth
+*.onnx
+*.task
+
+# Lock files (optional)
+uv.lock
+
+# Junk
+nul

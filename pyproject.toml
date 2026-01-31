@@ -1,0 +1,43 @@
+[project]
+name = "od2blender"
+version = "0.1.0"
+description = "Object detection tracks to Blender scene"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "typer>=0.12",
+  "loguru>=0.7",
+  "ultralytics>=8.2",
+  "opencv-python>=4.8",
+  "mediapipe>=0.10",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+od2blender = "od2blender.cli:app"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = [
+  "od2blender",
+  "od2blender.blender",
+  "od2blender.export",
+  "od2blender.infer",
+  "od2blender.ir",
+  "od2blender.process",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
