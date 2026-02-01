@@ -13,6 +13,8 @@ class PoseJoint:
     y: float
     z: float
     c: float
+    u: float = 0.0  # Normalized 2D x (0-1) for visualization
+    v: float = 0.0  # Normalized 2D y (0-1) for visualization
 
 
 @dataclass
@@ -51,7 +53,7 @@ def pose_to_dict(seq: PoseSequence) -> Dict[str, object]:
                 "f": int(frame.f),
                 "t": frame.t,
                 "joints": {
-                    name: {"x": joint.x, "y": joint.y, "z": joint.z, "c": joint.c}
+                    name: {"x": joint.x, "y": joint.y, "z": joint.z, "c": joint.c, "u": joint.u, "v": joint.v}
                     for name, joint in frame.joints.items()
                 },
             }
@@ -79,6 +81,8 @@ def pose_from_dict(data: Dict[str, object]) -> PoseSequence:
                 y=float(joint.get("y", 0.0)),
                 z=float(joint.get("z", 0.0)),
                 c=float(joint.get("c", 0.0)),
+                u=float(joint.get("u", 0.0)),
+                v=float(joint.get("v", 0.0)),
             )
         frames.append(PoseFrame(f=int(frame.get("f", 0)), t=frame.get("t"), joints=joints))
     return PoseSequence(meta=pose_meta, frames=frames)
