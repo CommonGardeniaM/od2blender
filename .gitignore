@@ -45,6 +45,7 @@ test_output/
 # Video files (large)
 *.mp4
 *.avi
+!waking.mp4
 *.mov
 
 # PMX/PMD models (large)
