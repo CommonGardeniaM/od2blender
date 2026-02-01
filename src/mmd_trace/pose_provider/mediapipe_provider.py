@@ -14,6 +14,7 @@ cv2 = cast(Any, importlib.import_module("cv2"))
 
 from ..io_pose import PoseFrame, PoseJoint, PoseMeta, PoseSequence
 from ..io_video import iter_video_frames
+from ..visualize import VisualizeConfig, create_overlay_frame
 from .base import PoseProvider
 
 LOG = logging.getLogger(__name__)
@@ -77,8 +78,21 @@ class MediaPipePoseProvider(PoseProvider):
             joints = self._extract_joints(result, pose_module)
             pose_frames.append(PoseFrame(f=frame_idx, t=t, joints=joints))
             if writer is not None:
-                overlay = frame.copy()
-                _draw_overlay_from_result(overlay, result, info.width, info.height)
+                # Use visualize logic for rich overlay
+                # Create default config for debug overlay
+                viz_config = VisualizeConfig(
+                    show_skeleton=True,
+                    show_joints=True,
+                    show_labels=False,  # Skip labels for debug to be faster? Or keep same. Let's keep defaults.
+                    show_frame_info=True,
+                )
+                overlay = create_overlay_frame(
+                    frame,
+                    joints,
+                    frame_idx,
+                    t,
+                    viz_config,
+                )
                 writer.write(overlay)
             if frame_idx % 100 == 0:
                 LOG.info("Processed frame %d", frame_idx)
@@ -105,22 +119,28 @@ class MediaPipePoseProvider(PoseProvider):
         world_landmarks = getattr(result, "pose_world_landmarks", None)
         world_list = world_landmarks[0] if world_landmarks else None
 
-        def _get(idx: int) -> Tuple[float, float, float, float]:
+        def _get(idx: int) -> Tuple[float, float, float, float, float, float]:
+            """Get joint data: (world_x, world_y, world_z, norm_u, norm_v, confidence)."""
+            lm_2d = landmarks_list[idx]
+            u = float(lm_2d.x)
+            v = float(lm_2d.y)
+            conf = float(getattr(lm_2d, "visibility", 1.0))
             if world_list:
-                lm = world_list[idx]
-                return float(lm.x), float(lm.y), float(lm.z), float(getattr(lm, "visibility", 1.0))
-            lm = landmarks_list[idx]
-            return float(lm.x), float(lm.y), float(lm.z), float(getattr(lm, "visibility", 1.0))
+                lm_3d = world_list[idx]
+                return float(lm_3d.x), float(lm_3d.y), float(lm_3d.z), u, v, conf
+            return u, v, 0.0, u, v, conf
 
         def _avg(
-            a: Tuple[float, float, float, float],
-            b: Tuple[float, float, float, float],
-        ) -> Tuple[float, float, float, float]:
+            a: Tuple[float, float, float, float, float, float],
+            b: Tuple[float, float, float, float, float, float],
+        ) -> Tuple[float, float, float, float, float, float]:
             return (
                 (a[0] + b[0]) / 2.0,
                 (a[1] + b[1]) / 2.0,
                 (a[2] + b[2]) / 2.0,
                 (a[3] + b[3]) / 2.0,
+                (a[4] + b[4]) / 2.0,
+                (a[5] + b[5]) / 2.0,
             )
 
         mp_pose = pose_module.PoseLandmark
@@ -179,33 +199,25 @@ class MediaPipePoseProvider(PoseProvider):
         return str(candidate)
 
 
-def _pose_joint(data: Tuple[float, float, float, float]) -> PoseJoint:
-    return PoseJoint(x=data[0], y=data[1], z=data[2], c=data[3])
+def _pose_joint(data: Tuple[float, float, float, float, float, float]) -> PoseJoint:
+    return PoseJoint(x=data[0], y=data[1], z=data[2], c=data[5], u=data[3], v=data[4])
 
 
 def _lerp(
-    a: Tuple[float, float, float, float],
-    b: Tuple[float, float, float, float],
+    a: Tuple[float, float, float, float, float, float],
+    b: Tuple[float, float, float, float, float, float],
     t: float,
-) -> Tuple[float, float, float, float]:
+) -> Tuple[float, float, float, float, float, float]:
     return (
         a[0] + (b[0] - a[0]) * t,
         a[1] + (b[1] - a[1]) * t,
         a[2] + (b[2] - a[2]) * t,
         a[3] + (b[3] - a[3]) * t,
+        a[4] + (b[4] - a[4]) * t,
+        a[5] + (b[5] - a[5]) * t,
     )
 
 
-def _draw_overlay_from_result(frame: np.ndarray, result: Any, width: int, height: int) -> None:
-    pose_landmarks = getattr(result, "pose_landmarks", None)
-    if not pose_landmarks:
-        return
-    landmarks = pose_landmarks[0]
-    for lm in landmarks:
-        x = int(lm.x * width)
-        y = int(lm.y * height)
-        if 0 <= x < width and 0 <= y < height:
-            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)
 
 
 def _default_model_path() -> Path:

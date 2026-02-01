@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 from .config import load_config
-from .io_pose import write_pose_json
+from .io_pose import write_pose_json, read_pose_json
 from .pose_provider import MediaPipePoseProvider
 from .pose_provider.mediapipe_provider import MediaPipeSettings
 from .smoothing import smooth_pose_sequence
@@ -15,15 +15,12 @@ from .mmd_io import load_pmx_model, write_vmd_motion
 from .axis_auto import infer_axis_map
 from .diagnose import collect_diagnostics, write_diagnostics
 from .retarget.retargeter import retarget_to_vmd
-
+from .visualize import VisualizeConfig, visualize_pose_on_video
 
 LOG = logging.getLogger(__name__)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(prog="mmd-trace")
-    sub = parser.add_subparsers(dest="command")
-
+def _setup_trace_parser(sub: argparse._SubParsersAction) -> None:
     trace = sub.add_parser("trace", help="Run full pipeline")
     trace.add_argument("--video", required=True, help="Input video path")
     trace.add_argument("--pmx", required=True, help="PMX model path")
@@ -39,12 +36,23 @@ def main() -> None:
     trace.add_argument("--debug_overlay", action="store_true")
     trace.add_argument("--diagnose", action="store_true", help="Write diagnostic report")
 
-    args = parser.parse_args()
-    if args.command != "trace":
-        parser.print_help()
-        return
 
-    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+def _setup_visualize_parser(sub: argparse._SubParsersAction) -> None:
+    viz = sub.add_parser("visualize", help="Visualize pose overlay on video")
+    viz.add_argument("--video", required=True, help="Input video path")
+    viz.add_argument("--pose", required=True, help="Pose JSON path (raw or smoothed)")
+    viz.add_argument("--out", required=True, help="Output video path")
+    viz.add_argument("--fps-override", type=int, default=None)
+    viz.add_argument("--no-skeleton", action="store_true", help="Hide skeleton lines")
+    viz.add_argument("--no-joints", action="store_true", help="Hide joint markers")
+    viz.add_argument("--labels", action="store_true", help="Show joint name labels")
+    viz.add_argument("--no-info", action="store_true", help="Hide frame info")
+    viz.add_argument("--line-thickness", type=int, default=2)
+    viz.add_argument("--joint-radius", type=int, default=5)
+    viz.add_argument("--low-conf-threshold", type=float, default=0.5)
+
+
+def _run_trace(args: argparse.Namespace) -> None:
     config = load_config(args.config)
     if args.pattern:
         config.center_groove.pattern = args.pattern
@@ -128,3 +136,53 @@ def main() -> None:
         )
         write_diagnostics(diag, out_dir / "diagnostic_report.md")
         LOG.info("Wrote diagnostics to %s", out_dir / "diagnostic_report.md")
+
+
+def _run_visualize(args: argparse.Namespace) -> None:
+    LOG.info("Loading pose data from %s", args.pose)
+    pose_sequence = read_pose_json(args.pose)
+
+    viz_config = VisualizeConfig(
+        show_skeleton=not args.no_skeleton,
+        show_joints=not args.no_joints,
+        show_labels=args.labels,
+        show_frame_info=not args.no_info,
+        line_thickness=args.line_thickness,
+        joint_radius=args.joint_radius,
+        low_confidence_threshold=args.low_conf_threshold,
+    )
+
+    visualize_pose_on_video(
+        args.video,
+        pose_sequence,
+        args.out,
+        viz_config,
+        fps_override=args.fps_override,
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="mmd-trace")
+    sub = parser.add_subparsers(dest="command")
+
+    _setup_trace_parser(sub)
+    _setup_visualize_parser(sub)
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        return
+
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+
+    if args.command == "trace":
+        _run_trace(args)
+    elif args.command == "visualize":
+        _run_visualize(args)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
