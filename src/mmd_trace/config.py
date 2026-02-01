@@ -27,6 +27,23 @@ class AxisMap:
 
 
 @dataclass
+class AxisAutoConfig:
+    """Axis auto-inference settings."""
+
+    enabled: bool = False
+    max_frames: int = 30
+    source: str = "hips"
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AxisAutoConfig":
+        return cls(
+            enabled=bool(data.get("enabled", False)),
+            max_frames=int(data.get("max_frames", 30)),
+            source=str(data.get("source", "hips")).lower(),
+        )
+
+
+@dataclass
 class ProviderConfig:
     """Pose provider settings."""
 
@@ -69,10 +86,14 @@ class RetargetConfig:
     """Retargeting settings."""
 
     min_confidence: float = 0.2
+    joint_min_confidence: Dict[str, float] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RetargetConfig":
-        return cls(min_confidence=float(data.get("min_confidence", 0.2)))
+        return cls(
+            min_confidence=float(data.get("min_confidence", 0.2)),
+            joint_min_confidence=dict(data.get("joint_min_confidence", {}) or {}),
+        )
 
 
 @dataclass
@@ -93,31 +114,54 @@ class CenterGrooveConfig:
 
 
 @dataclass
+class FacingConfig:
+    """Facing (yaw) correction settings."""
+
+    mode: str = "auto"
+    yaw_offset_deg: float = 0.0
+    source: str = "hips"
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "FacingConfig":
+        return cls(
+            mode=str(data.get("mode", "auto")).lower(),
+            yaw_offset_deg=float(data.get("yaw_offset_deg", 0.0)),
+            source=str(data.get("source", "hips")).lower(),
+        )
+
+
+@dataclass
 class Config:
     """Top-level configuration."""
 
     axis_map: AxisMap = field(default_factory=AxisMap)
+    axis_auto: AxisAutoConfig = field(default_factory=AxisAutoConfig)
     provider: ProviderConfig = field(default_factory=ProviderConfig)
     smoothing: SmoothingConfig = field(default_factory=SmoothingConfig)
     retarget: RetargetConfig = field(default_factory=RetargetConfig)
     center_groove: CenterGrooveConfig = field(default_factory=CenterGrooveConfig)
+    facing: FacingConfig = field(default_factory=FacingConfig)
     bone_map: Dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Config":
         axis_map = AxisMap.from_dict(data.get("axis_map", {}))
+        axis_auto = AxisAutoConfig.from_dict(data.get("axis_auto", {}))
         provider = ProviderConfig.from_dict(data.get("provider", {}))
         smoothing = SmoothingConfig.from_dict(data.get("smoothing", {}))
         retarget = RetargetConfig.from_dict(data.get("retarget", {}))
         center_groove = CenterGrooveConfig.from_dict(data.get("center_groove", {}))
+        facing = FacingConfig.from_dict(data.get("facing", {}))
         bone_map = default_bone_map()
         bone_map.update(data.get("bone_map", {}) or {})
         return cls(
             axis_map=axis_map,
+            axis_auto=axis_auto,
             provider=provider,
             smoothing=smoothing,
             retarget=retarget,
             center_groove=center_groove,
+            facing=facing,
             bone_map=bone_map,
         )
 

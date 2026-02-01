@@ -9,10 +9,17 @@ from pypmxvmd.common.models.vmd import VmdBoneFrame
 
 import numpy as np
 
-from .kinematics import quat_from_two_vectors, quat_inverse, quat_multiply, quat_normalize
+from .kinematics import (
+    quat_from_two_vectors,
+    quat_from_aim_up,
+    quat_inverse,
+    quat_multiply,
+    quat_normalize,
+    rotate_vector_around_axis,
+)
 from .mapping import BoneMapping
 from .center_groove import compute_center_groove, apply_axis_map
-from ..io_pose import PoseSequence
+from ..io_pose import PoseSequence, PoseFrame
 from ..mmd_io.pmx_adapter import PmxModelData
 from ..mmd_io.vmd_writer import make_bone_frame
 
@@ -28,18 +35,29 @@ def retarget_to_vmd(
     bone_map: Dict[str, str],
     axis_map: Dict[str, object],
     min_confidence: float = 0.2,
+    joint_min_confidence: Optional[Dict[str, float]] = None,
     center_pattern: str = "A",
     center_lowpass: float = 0.1,
     root_joint: str = "pelvis",
     include_upper_body2: bool = True,
+    facing_mode: str = "auto",
+    facing_yaw_offset_deg: float = 0.0,
+    facing_source: str = "hips",
 ) -> RetargetResult:
     """Compute VMD bone frames from pose sequence."""
 
     mapping = BoneMapping(bone_map)
-    rest_vectors = _compute_rest_vectors(seq, mapping, axis_map, min_confidence)
+    rest_vectors = _compute_rest_vectors(seq, mapping, axis_map, min_confidence, joint_min_confidence)
+    model_rest_vectors = _compute_model_rest_vectors(pmx, mapping, bone_map)
+    rest_forward = None
+    if facing_mode == "auto":
+        rest_forward = _compute_model_forward(pmx, bone_map)
+        if rest_forward is None:
+            rest_forward = _compute_rest_forward(seq, axis_map, min_confidence, joint_min_confidence, facing_source)
     parent_map = _build_parent_map(pmx)
     prev_local: Dict[str, np.ndarray] = {}
     bone_frames = []
+    joint_min_confidence = joint_min_confidence or {}
 
     center_positions, groove_positions = compute_center_groove(
         seq,
@@ -52,6 +70,16 @@ def retarget_to_vmd(
 
     for frame_idx, frame in enumerate(seq.frames):
         global_rotations: Dict[str, np.ndarray] = {}
+        frame_forward = None
+        if facing_mode == "auto":
+            frame_forward = _compute_frame_forward(frame, axis_map, min_confidence, joint_min_confidence, facing_source)
+            if frame_forward is not None:
+                yaw_offset_rad = np.radians(facing_yaw_offset_deg)
+                frame_forward = rotate_vector_around_axis(
+                    frame_forward,
+                    np.array([0.0, 1.0, 0.0]),
+                    yaw_offset_rad,
+                )
         for bone_key, parent_joint, child_joint in mapping.vector_pairs():
             if bone_key == "upper_body2" and not include_upper_body2:
                 continue
@@ -65,7 +93,9 @@ def retarget_to_vmd(
 
             parent = frame.joints[parent_joint]
             child = frame.joints[child_joint]
-            if parent.c < min_confidence or child.c < min_confidence:
+            parent_min = float(joint_min_confidence.get(parent_joint, min_confidence))
+            child_min = float(joint_min_confidence.get(child_joint, min_confidence))
+            if parent.c < parent_min or child.c < child_min:
                 if bone_key in prev_local:
                     bone_frames.append(
                         make_bone_frame(
@@ -80,10 +110,25 @@ def retarget_to_vmd(
             v = np.array([child.x - parent.x, child.y - parent.y, child.z - parent.z], dtype=np.float64)
             v = apply_axis_map(v, axis_map)
             v0 = rest_vectors.get(bone_key)
+            if v0 is None:
+                v0 = model_rest_vectors.get(bone_key)
             if v0 is None or np.linalg.norm(v) < 1e-6:
                 continue
 
-            q_global = quat_from_two_vectors(v0, v)
+            q_global = _rotation_for_bone(
+                bone_key,
+                v0,
+                v,
+                rest_vectors,
+                model_rest_vectors,
+                frame,
+                axis_map,
+                min_confidence,
+                joint_min_confidence,
+                frame_forward,
+                rest_forward,
+                facing_mode,
+            )
             parent_bone = parent_map.get(bone_name)
             if parent_bone and parent_bone in global_rotations:
                 q_local = quat_multiply(quat_inverse(global_rotations[parent_bone]), q_global)
@@ -134,8 +179,10 @@ def _compute_rest_vectors(
     mapping: BoneMapping,
     axis_map: Dict[str, object],
     min_confidence: float,
+    joint_min_confidence: Optional[Dict[str, float]],
 ) -> Dict[str, np.ndarray]:
     rest: Dict[str, np.ndarray] = {}
+    joint_min_confidence = joint_min_confidence or {}
     if not seq.frames:
         return rest
     target = len(mapping.vector_pairs())
@@ -147,7 +194,9 @@ def _compute_rest_vectors(
                 continue
             parent = frame.joints[parent_joint]
             child = frame.joints[child_joint]
-            if parent.c < min_confidence or child.c < min_confidence:
+            parent_min = float(joint_min_confidence.get(parent_joint, min_confidence))
+            child_min = float(joint_min_confidence.get(child_joint, min_confidence))
+            if parent.c < parent_min or child.c < child_min:
                 continue
             v0 = np.array([child.x - parent.x, child.y - parent.y, child.z - parent.z], dtype=np.float64)
             v0 = apply_axis_map(v0, axis_map)
@@ -157,6 +206,159 @@ def _compute_rest_vectors(
         if len(rest) >= target:
             break
     return rest
+
+
+def _rotation_for_bone(
+    bone_key: str,
+    v0: np.ndarray,
+    v: np.ndarray,
+    rest_vectors: Dict[str, np.ndarray],
+    model_rest_vectors: Dict[str, np.ndarray],
+    frame: PoseFrame,
+    axis_map: Dict[str, object],
+    min_confidence: float,
+    joint_min_confidence: Dict[str, float],
+    frame_forward: Optional[np.ndarray],
+    rest_forward: Optional[np.ndarray],
+    facing_mode: str,
+) -> np.ndarray:
+    if bone_key == "lower_body" and facing_mode == "auto":
+        if frame_forward is None or rest_forward is None:
+            return quat_from_two_vectors(v0, v)
+        up0 = v0
+        up1 = v
+        return quat_from_aim_up(rest_forward, up0, frame_forward, up1)
+
+    if bone_key in {"upper_body", "upper_body2", "neck", "head", "left_arm", "left_elbow", "right_arm", "right_elbow"}:
+        if frame_forward is None or rest_forward is None:
+            return quat_from_two_vectors(v0, v)
+        return quat_from_aim_up(v0, rest_forward, v, frame_forward)
+
+    return quat_from_two_vectors(v0, v)
+
+
+def _compute_frame_forward(
+    frame: PoseFrame,
+    axis_map: Dict[str, object],
+    min_confidence: float,
+    joint_min_confidence: Dict[str, float],
+    source: str,
+) -> Optional[np.ndarray]:
+    joints = frame.joints
+    if source == "shoulders":
+        required = ("l_shoulder", "r_shoulder", "spine", "pelvis")
+    else:
+        required = ("l_hip", "r_hip", "spine", "pelvis")
+    if not all(k in joints for k in required):
+        return None
+    if source == "shoulders":
+        left = joints["l_shoulder"]
+        right = joints["r_shoulder"]
+    else:
+        left = joints["l_hip"]
+        right = joints["r_hip"]
+    spine = joints["spine"]
+    pelvis = joints["pelvis"]
+    checks = [("spine", spine), ("pelvis", pelvis)]
+    if source == "shoulders":
+        checks += [("l_shoulder", left), ("r_shoulder", right)]
+    else:
+        checks += [("l_hip", left), ("r_hip", right)]
+    for name, joint in checks:
+        if joint.c < float(joint_min_confidence.get(name, min_confidence)):
+            return None
+    side = np.array([left.x - right.x, left.y - right.y, left.z - right.z], dtype=np.float64)
+    up = np.array([spine.x - pelvis.x, spine.y - pelvis.y, spine.z - pelvis.z], dtype=np.float64)
+    forward = np.cross(side, up)
+    forward = apply_axis_map(forward, axis_map)
+    if np.linalg.norm(forward) < 1e-6:
+        return None
+    return forward
+
+
+def _compute_rest_forward(
+    seq: PoseSequence,
+    axis_map: Dict[str, object],
+    min_confidence: float,
+    joint_min_confidence: Optional[Dict[str, float]],
+    source: str,
+) -> Optional[np.ndarray]:
+    joint_min_confidence = joint_min_confidence or {}
+    for frame in seq.frames:
+        forward = _compute_frame_forward(frame, axis_map, min_confidence, joint_min_confidence, source)
+        if forward is not None:
+            return forward
+    return None
+
+
+def _compute_model_rest_vectors(
+    pmx: PmxModelData,
+    mapping: BoneMapping,
+    bone_map: Dict[str, str],
+) -> Dict[str, np.ndarray]:
+    rest: Dict[str, np.ndarray] = {}
+    for bone_key, parent_key, child_key in mapping.bone_pairs():
+        parent_name = bone_map.get(parent_key)
+        child_name = bone_map.get(child_key)
+        if not parent_name or not child_name:
+            continue
+        parent_pos = _pmx_bone_pos(pmx, parent_name)
+        child_pos = _pmx_bone_pos(pmx, child_name)
+        if parent_pos is None or child_pos is None:
+            continue
+        v0 = np.array(
+            [child_pos[0] - parent_pos[0], child_pos[1] - parent_pos[1], child_pos[2] - parent_pos[2]],
+            dtype=np.float64,
+        )
+        if np.linalg.norm(v0) < 1e-6:
+            continue
+        rest[bone_key] = v0
+    return rest
+
+
+def _compute_model_forward(pmx: PmxModelData, bone_map: Dict[str, str]) -> Optional[np.ndarray]:
+    left_name = bone_map.get("left_leg", "左足")
+    right_name = bone_map.get("right_leg", "右足")
+    upper_name = bone_map.get("upper_body", "上半身")
+    lower_name = bone_map.get("lower_body", "下半身")
+    left = _pmx_bone_pos(pmx, left_name)
+    right = _pmx_bone_pos(pmx, right_name)
+    upper = _pmx_bone_pos(pmx, upper_name)
+    lower = _pmx_bone_pos(pmx, lower_name)
+    if left is None or right is None or upper is None or lower is None:
+        return None
+    right_vec = np.array([right[0] - left[0], right[1] - left[1], right[2] - left[2]], dtype=np.float64)
+    up_vec = np.array([upper[0] - lower[0], upper[1] - lower[1], upper[2] - lower[2]], dtype=np.float64)
+    if np.linalg.norm(right_vec) < 1e-6 or np.linalg.norm(up_vec) < 1e-6:
+        return None
+    forward = np.cross(right_vec, up_vec)
+    if np.linalg.norm(forward) < 1e-6:
+        return None
+    return forward / np.linalg.norm(forward)
+
+
+def _compute_model_basis(pmx: PmxModelData, bone_map: Dict[str, str]) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    left_name = bone_map.get("left_leg", "左足")
+    right_name = bone_map.get("right_leg", "右足")
+    upper_name = bone_map.get("upper_body", "上半身")
+    lower_name = bone_map.get("lower_body", "下半身")
+    left = _pmx_bone_pos(pmx, left_name)
+    right = _pmx_bone_pos(pmx, right_name)
+    upper = _pmx_bone_pos(pmx, upper_name)
+    lower = _pmx_bone_pos(pmx, lower_name)
+    if left is None or right is None or upper is None or lower is None:
+        return None
+    right_vec = np.array([right[0] - left[0], right[1] - left[1], right[2] - left[2]], dtype=np.float64)
+    up_vec = np.array([upper[0] - lower[0], upper[1] - lower[1], upper[2] - lower[2]], dtype=np.float64)
+    if np.linalg.norm(right_vec) < 1e-6 or np.linalg.norm(up_vec) < 1e-6:
+        return None
+    right_n = right_vec / np.linalg.norm(right_vec)
+    up_n = up_vec / np.linalg.norm(up_vec)
+    forward = np.cross(right_n, up_n)
+    if np.linalg.norm(forward) < 1e-6:
+        return None
+    forward_n = forward / np.linalg.norm(forward)
+    return right_n, up_n, forward_n
 
 
 def _build_parent_map(pmx: PmxModelData) -> Dict[str, Optional[str]]:
