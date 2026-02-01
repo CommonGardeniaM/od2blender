@@ -1,0 +1,49 @@
+axis_map:
+  swap: ["x", "y", "z"]
+  invert:
+    x: false
+    y: true
+    z: false
+
+provider:
+  name: mediapipe
+  min_confidence: 0.2
+  model_complexity: 1
+  model_path: "models/pose_landmarker.task"
+
+smoothing:
+  enabled: true
+  max_gap: 5
+  ema_alpha: 0.3
+  min_confidence: 0.2
+
+retarget:
+  min_confidence: 0.2
+
+center_groove:
+  pattern: A
+  lowpass_alpha: 0.1
+  root_joint: pelvis
+
+bone_map:
+  center: "センター"
+  groove: "グルーブ"
+  lower_body: "下半身"
+  upper_body: "上半身"
+  upper_body2: "上半身2"
+  neck: "首"
+  head: "頭"
+  left_shoulder: "左肩"
+  left_arm: "左腕"
+  left_elbow: "左ひじ"
+  left_wrist: "左手首"
+  right_shoulder: "右肩"
+  right_arm: "右腕"
+  right_elbow: "右ひじ"
+  right_wrist: "右手首"
+  left_leg: "左足"
+  left_knee: "左ひざ"
+  left_ankle: "左足首"
+  right_leg: "右足"
+  right_knee: "右ひざ"
+  right_ankle: "右足首"
