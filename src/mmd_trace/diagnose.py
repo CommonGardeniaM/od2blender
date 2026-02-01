@@ -41,7 +41,6 @@ def collect_diagnostics(
     meta = {
         "generated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "frames": len(pose_seq.frames),
-        "fps": pose_seq.meta.fps,
         "pmx_name": pmx.name,
         "pmx_bones": len(pmx.bones),
         "min_confidence": min_confidence,
@@ -124,7 +123,7 @@ def write_diagnostics(diag: Diagnostics, path: Path) -> None:
     lines.append(f"Generated: {diag.meta.get('generated')}")
     lines.append("")
     lines.append("## Meta")
-    for key in ["frames", "fps", "pmx_name", "pmx_bones", "min_confidence", "model_forward", "model_basis"]:
+    for key in ["frames", "pmx_name", "pmx_bones", "min_confidence", "model_forward", "model_basis"]:
         lines.append(f"- {key}: {diag.meta.get(key)}")
     lines.append("")
 

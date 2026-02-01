@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 
 from .io_pose import PoseJoint, PoseSequence, read_pose_json
-from .io_video import iter_video_frames
+
 
 LOG = logging.getLogger(__name__)
 
@@ -247,21 +247,19 @@ def create_overlay_frame(
     return result
 
 
-def visualize_pose_on_video(
-    video_path: str,
+def visualize_pose_on_image(
+    image_path: str,
     pose_sequence: PoseSequence,
     output_path: str,
     config: Optional[VisualizeConfig] = None,
-    fps_override: Optional[int] = None,
 ) -> None:
-    """Generate overlay video from video and pose sequence.
+    """Generate overlay image from image and pose sequence.
     
     Args:
-        video_path: Path to input video
+        image_path: Path to input image
         pose_sequence: PoseSequence with joint data
-        output_path: Path for output video
+        output_path: Path for output image
         config: Visualization configuration
-        fps_override: Optional FPS override
     """
     config = config or VisualizeConfig()
     
@@ -271,71 +269,32 @@ def visualize_pose_on_video(
         os.makedirs(output_dir, exist_ok=True)
         LOG.info("Created output directory: %s", output_dir)
     
-    # Open video
-    info, frame_iter = iter_video_frames(video_path, fps_override)
+    image = cv2.imread(image_path)
+    if image is None:
+        raise FileNotFoundError(f"Image not found or unreadable: {image_path}")
+
+    # Get first pose frame
+    pose_frame = pose_sequence.frames[0] if pose_sequence.frames else None
     
-    # Setup video writer with fallback codecs
-    writer = None
-    codecs_to_try = ["mp4v", "avc1", "XVID", "MJPG"]
-    
-    for codec in codecs_to_try:
-        fourcc = cv2.VideoWriter_fourcc(*codec)
-        writer = cv2.VideoWriter(output_path, fourcc, info.fps, (info.width, info.height))
-        if writer.isOpened():
-            LOG.info("Using video codec: %s", codec)
-            break
-        writer = None
-    
-    if writer is None:
-        raise RuntimeError(
-            f"Failed to open video writer: {output_path}. "
-            f"Tried codecs: {codecs_to_try}. "
-            f"Please ensure output directory exists and you have write permissions."
+    if pose_frame:
+        overlay = create_overlay_frame(
+            image,
+            pose_frame.joints,
+            0,
+            0.0,
+            config,
         )
-    
-    # Create frame lookup from pose sequence
-    pose_frames = {frame.f: frame for frame in pose_sequence.frames}
-    
-    LOG.info("Processing %d video frames, %d pose frames", info.frame_count, len(pose_frames))
-    
-    processed = 0
-    for frame_idx, timestamp, frame in frame_iter:
-        # Get corresponding pose frame
-        pose_frame = pose_frames.get(frame_idx)
-        
-        if pose_frame:
-            # Create overlay with pose
-            overlay = create_overlay_frame(
-                frame,
-                pose_frame.joints,
-                frame_idx,
-                timestamp,
-                config,
-            )
-            writer.write(overlay)
-        else:
-            # Write original frame if no pose data
-            if config.show_frame_info:
-                info_frame = frame.copy()
-                _draw_frame_info(info_frame, frame_idx, timestamp, {}, config)
-                writer.write(info_frame)
-            else:
-                writer.write(frame)
-        
-        processed += 1
-        if processed % 100 == 0:
-            LOG.info("Processed %d/%d frames", processed, info.frame_count)
-    
-    writer.release()
-    LOG.info("Wrote overlay video to %s", output_path)
+        cv2.imwrite(output_path, overlay)
+        LOG.info("Wrote overlay image to %s", output_path)
+    else:
+        LOG.warning("No pose data found to visualize")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="mmd-trace visualize")
-    parser.add_argument("--video", required=True, help="Input video path")
-    parser.add_argument("--pose", required=True, help="Pose JSON path (raw or smoothed)")
-    parser.add_argument("--out", required=True, help="Output video path")
-    parser.add_argument("--fps-override", type=int, default=None)
+    parser.add_argument("--image", required=True, help="Input image path")
+    parser.add_argument("--pose", required=True, help="Pose JSON path")
+    parser.add_argument("--out", required=True, help="Output image path")
     parser.add_argument("--no-skeleton", action="store_true", help="Hide skeleton lines")
     parser.add_argument("--no-joints", action="store_true", help="Hide joint markers")
     parser.add_argument("--labels", action="store_true", help="Show joint name labels")
@@ -364,12 +323,11 @@ def main() -> None:
     )
     
     # Generate overlay
-    visualize_pose_on_video(
-        args.video,
+    visualize_pose_on_image(
+        args.image,
         pose_sequence,
         args.out,
         viz_config,
-        fps_override=args.fps_override,
     )
 
 

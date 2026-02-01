@@ -26,7 +26,6 @@ class PoseFrame:
 
 @dataclass
 class PoseMeta:
-    fps: int
     frame_count: int
     units: str
     coord: str
@@ -42,7 +41,6 @@ class PoseSequence:
 def pose_to_dict(seq: PoseSequence) -> Dict[str, object]:
     return {
         "meta": {
-            "fps": int(seq.meta.fps),
             "frame_count": int(seq.meta.frame_count),
             "units": seq.meta.units,
             "coord": seq.meta.coord,
@@ -66,7 +64,6 @@ def pose_from_dict(data: Dict[str, object]) -> PoseSequence:
     meta = data.get("meta", {})
     frames_data = data.get("frames", [])
     pose_meta = PoseMeta(
-        fps=int(meta.get("fps", 30)),
         frame_count=int(meta.get("frame_count", len(frames_data))),
         units=str(meta.get("units", "m")),
         coord=str(meta.get("coord", "provider_world")),

@@ -13,7 +13,7 @@ import numpy as np
 cv2 = cast(Any, importlib.import_module("cv2"))
 
 from ..io_pose import PoseFrame, PoseJoint, PoseMeta, PoseSequence
-from ..io_video import iter_video_frames
+
 from ..visualize import VisualizeConfig, create_overlay_frame
 from .base import PoseProvider
 
@@ -35,11 +35,13 @@ class MediaPipePoseProvider(PoseProvider):
 
     def infer(
         self,
-        video_path: str,
-        fps_override: Optional[int] = None,
+        image_path: str,
         debug_overlay_path: Optional[str] = None,
     ) -> PoseSequence:
-        info, frames = iter_video_frames(video_path, fps_override=fps_override)
+        image = cv2.imread(image_path)
+        if image is None:
+            raise FileNotFoundError(f"Image not found or unreadable: {image_path}")
+
         pose_module = cast(Any, importlib.import_module("mediapipe.tasks.python.vision"))
         base_module = cast(Any, importlib.import_module("mediapipe.tasks.python.core.base_options"))
         image_module = cast(Any, importlib.import_module("mediapipe.tasks.python.vision.core.image"))
@@ -49,7 +51,7 @@ class MediaPipePoseProvider(PoseProvider):
         base_options = base_module.BaseOptions(model_asset_path=model_path)
         options = pose_module.PoseLandmarkerOptions(
             base_options=base_options,
-            running_mode=running_mode.VIDEO,
+            running_mode=running_mode.IMAGE,
             num_poses=1,
             min_pose_detection_confidence=self.settings.min_confidence,
             min_pose_presence_confidence=self.settings.min_confidence,
@@ -58,52 +60,40 @@ class MediaPipePoseProvider(PoseProvider):
         )
         pose = pose_module.PoseLandmarker.create_from_options(options)
 
-        writer = None
-        if debug_overlay_path:
-            fourcc_func = getattr(cv2, "VideoWriter_fourcc", None)
-            if fourcc_func is None:
-                raise RuntimeError("cv2.VideoWriter_fourcc is unavailable")
-            fourcc = fourcc_func(*"mp4v")
-            writer = cv2.VideoWriter(debug_overlay_path, fourcc, info.fps, (info.width, info.height))
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mp_image = image_module.Image(
+            image_format=image_module.ImageFormat.SRGB,
+            data=rgb,
+        )
+        
+        result = cast(Any, pose.detect(mp_image))
+        joints = self._extract_joints(result, pose_module)
+        
+        # Single frame at t=0
+        pose_frames = [PoseFrame(f=0, t=0.0, joints=joints)]
 
-        pose_frames = []
-        for frame_idx, t, frame in frames:
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mp_image = image_module.Image(
-                image_format=image_module.ImageFormat.SRGB,
-                data=rgb,
+        if debug_overlay_path and joints:
+             # Use visualize logic for rich overlay
+            viz_config = VisualizeConfig(
+                show_skeleton=True,
+                show_joints=True,
+                show_labels=False,
+                show_frame_info=False,
             )
-            timestamp_ms = int(t * 1000)
-            result = cast(Any, pose.detect_for_video(mp_image, timestamp_ms))
-            joints = self._extract_joints(result, pose_module)
-            pose_frames.append(PoseFrame(f=frame_idx, t=t, joints=joints))
-            if writer is not None:
-                # Use visualize logic for rich overlay
-                # Create default config for debug overlay
-                viz_config = VisualizeConfig(
-                    show_skeleton=True,
-                    show_joints=True,
-                    show_labels=False,  # Skip labels for debug to be faster? Or keep same. Let's keep defaults.
-                    show_frame_info=True,
-                )
-                overlay = create_overlay_frame(
-                    frame,
-                    joints,
-                    frame_idx,
-                    t,
-                    viz_config,
-                )
-                writer.write(overlay)
-            if frame_idx % 100 == 0:
-                LOG.info("Processed frame %d", frame_idx)
+            overlay = create_overlay_frame(
+                image,
+                joints,
+                0,
+                0.0,
+                viz_config,
+            )
+            cv2.imwrite(debug_overlay_path, overlay)
+            LOG.info("Wrote debug overlay to %s", debug_overlay_path)
 
-        if writer is not None:
-            writer.release()
         pose.close()
 
         meta = PoseMeta(
-            fps=info.fps,
-            frame_count=len(pose_frames),
+            frame_count=1,
             units="m",
             coord="provider_world",
             axis_map={"swap": ["x", "y", "z"], "invert": {"x": False, "y": False, "z": False}},

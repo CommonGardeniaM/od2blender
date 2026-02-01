@@ -10,39 +10,32 @@ from .config import load_config
 from .io_pose import write_pose_json, read_pose_json
 from .pose_provider import MediaPipePoseProvider
 from .pose_provider.mediapipe_provider import MediaPipeSettings
-from .smoothing import smooth_pose_sequence
 from .mmd_io import load_pmx_model, write_vmd_motion
 from .axis_auto import infer_axis_map
 from .diagnose import collect_diagnostics, write_diagnostics
 from .retarget.retargeter import retarget_to_vmd
-from .visualize import VisualizeConfig, visualize_pose_on_video
+from .visualize import VisualizeConfig, visualize_pose_on_image
 
 LOG = logging.getLogger(__name__)
 
 
 def _setup_trace_parser(sub: argparse._SubParsersAction) -> None:
     trace = sub.add_parser("trace", help="Run full pipeline")
-    trace.add_argument("--video", required=True, help="Input video path")
+    trace.add_argument("--image", required=True, help="Input image path")
     trace.add_argument("--pmx", required=True, help="PMX model path")
     trace.add_argument("--out", required=True, help="Output directory")
     trace.add_argument("--config", required=False, help="Config YAML/JSON")
     trace.add_argument("--provider", default="mediapipe", help="Pose provider")
-    smooth_group = trace.add_mutually_exclusive_group()
-    smooth_group.add_argument("--smooth", dest="smooth", action="store_true", help="Enable smoothing")
-    smooth_group.add_argument("--no-smooth", dest="smooth", action="store_false", help="Disable smoothing")
-    trace.set_defaults(smooth=None)
     trace.add_argument("--pattern", default=None, help="Center/Groove pattern A/B")
-    trace.add_argument("--fps_override", type=int, default=None)
     trace.add_argument("--debug_overlay", action="store_true")
     trace.add_argument("--diagnose", action="store_true", help="Write diagnostic report")
 
 
 def _setup_visualize_parser(sub: argparse._SubParsersAction) -> None:
-    viz = sub.add_parser("visualize", help="Visualize pose overlay on video")
-    viz.add_argument("--video", required=True, help="Input video path")
-    viz.add_argument("--pose", required=True, help="Pose JSON path (raw or smoothed)")
-    viz.add_argument("--out", required=True, help="Output video path")
-    viz.add_argument("--fps-override", type=int, default=None)
+    viz = sub.add_parser("visualize", help="Visualize pose overlay on image")
+    viz.add_argument("--image", required=True, help="Input image path")
+    viz.add_argument("--pose", required=True, help="Pose JSON path")
+    viz.add_argument("--out", required=True, help="Output image path")
     viz.add_argument("--no-skeleton", action="store_true", help="Hide skeleton lines")
     viz.add_argument("--no-joints", action="store_true", help="Hide joint markers")
     viz.add_argument("--labels", action="store_true", help="Show joint name labels")
@@ -69,8 +62,10 @@ def _run_trace(args: argparse.Namespace) -> None:
         model_path=config.provider.model_path or None,
     )
     provider = MediaPipePoseProvider(settings=provider_settings)
-    debug_path = str(out_dir / "debug_overlay.mp4") if args.debug_overlay else None
-    raw_seq = provider.infer(args.video, fps_override=args.fps_override, debug_overlay_path=debug_path)
+    debug_path = str(out_dir / "debug_overlay.jpg") if args.debug_overlay else None
+    
+    # Run inference on single image
+    raw_seq = provider.infer(args.image, debug_overlay_path=debug_path)
 
     axis_map = {"swap": config.axis_map.swap, "invert": config.axis_map.invert}
     pmx = load_pmx_model(args.pmx)
@@ -90,24 +85,13 @@ def _run_trace(args: argparse.Namespace) -> None:
             LOG.info("Axis auto-infer swap=%s invert=%s score=%.3f", inferred.swap, inferred.invert, inferred.score)
 
     raw_seq.meta.axis_map = axis_map
-    write_pose_json(raw_seq, str(out_dir / "pose_raw.json"))
+    write_pose_json(raw_seq, str(out_dir / "pose.json"))
 
-    use_smooth = config.smoothing.enabled if args.smooth is None else args.smooth
-    if use_smooth:
-        smooth_seq = smooth_pose_sequence(
-            raw_seq,
-            max_gap=config.smoothing.max_gap,
-            ema_alpha=config.smoothing.ema_alpha,
-            min_confidence=config.smoothing.min_confidence,
-        )
-    else:
-        smooth_seq = raw_seq
-
-    smooth_seq.meta.axis_map = raw_seq.meta.axis_map
-    write_pose_json(smooth_seq, str(out_dir / "pose_smooth.json"))
+    # No smoothing for single image
+    pose_seq = raw_seq
 
     retarget = retarget_to_vmd(
-        smooth_seq,
+        pose_seq,
         pmx=pmx,
         bone_map=config.bone_map,
         axis_map=axis_map,
@@ -126,7 +110,7 @@ def _run_trace(args: argparse.Namespace) -> None:
 
     if args.diagnose:
         diag = collect_diagnostics(
-            pose_seq=smooth_seq,
+            pose_seq=pose_seq,
             pmx=pmx,
             bone_frames=retarget.bone_frames,
             bone_map=config.bone_map,
@@ -152,12 +136,11 @@ def _run_visualize(args: argparse.Namespace) -> None:
         low_confidence_threshold=args.low_conf_threshold,
     )
 
-    visualize_pose_on_video(
-        args.video,
+    visualize_pose_on_image(
+        args.image,
         pose_sequence,
         args.out,
         viz_config,
-        fps_override=args.fps_override,
     )
 
 

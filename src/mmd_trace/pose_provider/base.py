@@ -14,10 +14,9 @@ class PoseProvider(ABC):
     @abstractmethod
     def infer(
         self,
-        video_path: str,
-        fps_override: Optional[int] = None,
+        image_path: str,
         debug_overlay_path: Optional[str] = None,
     ) -> PoseSequence:
-        """Infer pose sequence from video."""
+        """Infer pose sequence from image."""
 
         raise NotImplementedError

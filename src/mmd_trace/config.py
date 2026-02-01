@@ -62,23 +62,6 @@ class ProviderConfig:
         )
 
 
-@dataclass
-class SmoothingConfig:
-    """Smoothing settings."""
-
-    enabled: bool = True
-    max_gap: int = 5
-    ema_alpha: float = 0.3
-    min_confidence: float = 0.2
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SmoothingConfig":
-        return cls(
-            enabled=bool(data.get("enabled", True)),
-            max_gap=int(data.get("max_gap", 5)),
-            ema_alpha=float(data.get("ema_alpha", 0.3)),
-            min_confidence=float(data.get("min_confidence", 0.2)),
-        )
 
 
 @dataclass
@@ -137,7 +120,6 @@ class Config:
     axis_map: AxisMap = field(default_factory=AxisMap)
     axis_auto: AxisAutoConfig = field(default_factory=AxisAutoConfig)
     provider: ProviderConfig = field(default_factory=ProviderConfig)
-    smoothing: SmoothingConfig = field(default_factory=SmoothingConfig)
     retarget: RetargetConfig = field(default_factory=RetargetConfig)
     center_groove: CenterGrooveConfig = field(default_factory=CenterGrooveConfig)
     facing: FacingConfig = field(default_factory=FacingConfig)
@@ -148,7 +130,6 @@ class Config:
         axis_map = AxisMap.from_dict(data.get("axis_map", {}))
         axis_auto = AxisAutoConfig.from_dict(data.get("axis_auto", {}))
         provider = ProviderConfig.from_dict(data.get("provider", {}))
-        smoothing = SmoothingConfig.from_dict(data.get("smoothing", {}))
         retarget = RetargetConfig.from_dict(data.get("retarget", {}))
         center_groove = CenterGrooveConfig.from_dict(data.get("center_groove", {}))
         facing = FacingConfig.from_dict(data.get("facing", {}))
@@ -158,7 +139,6 @@ class Config:
             axis_map=axis_map,
             axis_auto=axis_auto,
             provider=provider,
-            smoothing=smoothing,
             retarget=retarget,
             center_groove=center_groove,
             facing=facing,
