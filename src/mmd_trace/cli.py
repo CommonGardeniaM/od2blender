@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
 
-from mmd_trace.io import PmxAdapter, generate_vpd_from_image
+from mmd_trace.io import load_pmx
 
 LOG = logging.getLogger(__name__)
 
@@ -23,26 +24,52 @@ def setup_logging(verbose: bool = False) -> None:
 def cmd_list_bones(args: argparse.Namespace) -> int:
     """Handle list-bones command."""
     try:
-        adapter = PmxAdapter(args.pmx)
-        
+        model = load_pmx(args.pmx)
+
         if args.format == "json":
-            json_str = adapter.export_bones_json(args.out)
-            if not args.out:
-                print(json_str)
-        else:  # table
+            data = {
+                "pmx_file": str(Path(args.pmx)),
+                "total_bones": len(model.bones),
+                "bones": [
+                    {
+                        "index": bone.index,
+                        "name": bone.name,
+                        "name_en": bone.name_en,
+                        "position": bone.position.tolist(),
+                        "parent": bone.parent_index,
+                        "flags": bone.flags,
+                        "tail_index": bone.tail_index,
+                        "tail_offset": bone.tail_offset.tolist() if bone.tail_offset is not None else None,
+                        "ik_target": bone.ik.target_index if bone.ik is not None else None,
+                        "ik_links": [link.bone_index for link in bone.ik.links] if bone.ik is not None else [],
+                    }
+                    for bone in model.bones
+                ],
+            }
+            json_str = json.dumps(data, ensure_ascii=False, indent=2)
             if args.out:
-                # Redirect output to file
-                import io
-                from contextlib import redirect_stdout
-                
-                output = io.StringIO()
-                with redirect_stdout(output):
-                    adapter.print_bone_list()
-                
-                Path(args.out).write_text(output.getvalue(), encoding="utf-8")
+                Path(args.out).write_text(json_str, encoding="utf-8")
                 LOG.info("Exported bone list to: %s", args.out)
             else:
-                adapter.print_bone_list()
+                print(json_str)
+        else:  # table
+            lines = []
+            lines.append(f"\nPMX File: {args.pmx}")
+            lines.append(f"Total Bones: {len(model.bones)}")
+            lines.append("-" * 70)
+            lines.append(f"{'Index':<6} {'Name':<30} {'Name(EN)':<20} {'Parent'}")
+            lines.append("-" * 70)
+            for bone in model.bones:
+                parent_str = str(bone.parent_index) if bone.parent_index >= 0 else "-"
+                lines.append(f"{bone.index:<6} {bone.name:<30} {bone.name_en:<20} {parent_str}")
+            lines.append("-" * 70)
+
+            output = "\n".join(lines) + "\n"
+            if args.out:
+                Path(args.out).write_text(output, encoding="utf-8")
+                LOG.info("Exported bone list to: %s", args.out)
+            else:
+                print(output, end="")
         
         return 0
         
@@ -54,6 +81,8 @@ def cmd_list_bones(args: argparse.Namespace) -> int:
 def cmd_pose_vpd(args: argparse.Namespace) -> int:
     """Handle pose-vpd command."""
     try:
+        from mmd_trace.io.pose import generate_vpd_from_image
+
         generate_vpd_from_image(
             image_path=args.image,
             pmx_path=args.pmx,
@@ -74,9 +103,6 @@ def cmd_pose_vpd(args: argparse.Namespace) -> int:
         return 1
     except Exception as e:
         LOG.error("Error generating VPD: %s", e)
-        return 1
-    except Exception as e:
-        LOG.error("Error processing PMX file: %s", e)
         return 1
 
 

@@ -16,7 +16,6 @@ dependencies = [
   "mediapipe>=0.10.8",
   "pypmxvmd>=2.7.1",
   "pyyaml>=6.0.1",
-  "pymeshio>=3.0.1",
 ]
 
 [project.optional-dependencies]

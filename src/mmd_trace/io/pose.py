@@ -1,13 +1,12 @@
 """Pose to VPD conversion for single images."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
 
-from mmd_trace.io.pmx import PmxAdapter, PmxBoneInfo
+from mmd_trace.io.pmx import load_pmx, PmxModel, PmxBone
 from mmd_trace.io.vpd import write_vpd
 from mmd_trace.pose_provider.mediapipe_provider import MediaPipePoseProvider
 
@@ -145,52 +144,18 @@ def make_basis(right: np.ndarray, up: np.ndarray, forward_hint: Optional[np.ndar
     return np.stack([r, u, f], axis=1)
 
 
-@dataclass
-class Bone:
-    idx: int
-    name_jp: str
-    pos: np.ndarray
-    parent: int
-    flags: int
-    tail_index: Optional[int]
-    tail_offset: Optional[np.ndarray]
-    ik_target: Optional[int]
-    ik_links: List[int]
-
-
-def _bones_from_adapter(adapter: PmxAdapter) -> Tuple[str, List[Bone], Dict[str, Bone]]:
-    bones = []
-    for bone in adapter.get_bone_list():
-        tail_offset = None
-        if bone.tail_offset is not None:
-            tail_offset = np.array(bone.tail_offset, dtype=np.float64)
-        bones.append(
-            Bone(
-                idx=bone.index,
-                name_jp=bone.name,
-                pos=np.array(bone.position, dtype=np.float64),
-                parent=bone.parent,
-                flags=bone.flags,
-                tail_index=bone.tail_index,
-                tail_offset=tail_offset,
-                ik_target=bone.ik_target,
-                ik_links=list(bone.ik_links),
-            )
-        )
-    name_to_bone = {bone.name_jp: bone for bone in bones}
-    return adapter.model_name, bones, name_to_bone
-
-
-def parent_name(bones: List[Bone], bone: Bone) -> Optional[str]:
-    if bone.parent is None or bone.parent < 0:
+def parent_name(bones: List[PmxBone], bone: PmxBone) -> Optional[str]:
+    """Get parent bone name."""
+    if bone.parent_index < 0:
         return None
-    return bones[bone.parent].name_jp
+    return bones[bone.parent_index].name
 
 
-def rest_dir(bones: List[Bone], bone: Bone) -> np.ndarray:
-    origin = bone.pos
+def rest_dir(bones: List[PmxBone], bone: PmxBone) -> np.ndarray:
+    """Calculate rest direction from bone position to tail."""
+    origin = bone.position
     if bone.tail_index is not None and bone.tail_index >= 0:
-        target = bones[bone.tail_index].pos
+        target = bones[bone.tail_index].position
         direction = target - origin
     elif bone.tail_offset is not None:
         direction = bone.tail_offset
@@ -207,7 +172,10 @@ def hand_center(points: np.ndarray, side: str) -> np.ndarray:
     return (points[MP["R_IDX"]] + points[MP["R_PNK"]] + points[MP["R_THM"]]) / 3.0
 
 
-def compute_scale(points: np.ndarray, name_to_bone: Dict[str, Bone]) -> float:
+def compute_scale(points: np.ndarray, model: PmxModel) -> float:
+    """Compute scale factor from MediaPipe to PMX model."""
+    name_to_bone = {bone.name: bone for bone in model.bones}
+    
     left = (
         np.linalg.norm(points[MP["L_KNE"]] - points[MP["L_HIP"]])
         + np.linalg.norm(points[MP["L_ANK"]] - points[MP["L_KNE"]])
@@ -219,12 +187,12 @@ def compute_scale(points: np.ndarray, name_to_bone: Dict[str, Bone]) -> float:
     mp_leg = (left + right) * 0.5
 
     pmx_left = (
-        np.linalg.norm(name_to_bone["左ひざ"].pos - name_to_bone["左足"].pos)
-        + np.linalg.norm(name_to_bone["左足首"].pos - name_to_bone["左ひざ"].pos)
+        np.linalg.norm(name_to_bone["左ひざ"].position - name_to_bone["左足"].position)
+        + np.linalg.norm(name_to_bone["左足首"].position - name_to_bone["左ひざ"].position)
     )
     pmx_right = (
-        np.linalg.norm(name_to_bone["右ひざ"].pos - name_to_bone["右足"].pos)
-        + np.linalg.norm(name_to_bone["右足首"].pos - name_to_bone["右ひざ"].pos)
+        np.linalg.norm(name_to_bone["右ひざ"].position - name_to_bone["右足"].position)
+        + np.linalg.norm(name_to_bone["右足首"].position - name_to_bone["右ひざ"].position)
     )
     pmx_leg = (pmx_left + pmx_right) * 0.5
 
@@ -258,18 +226,34 @@ def rot_from_basis(rest_R: np.ndarray, pose_R: np.ndarray) -> np.ndarray:
 def build_rotations(
     points: np.ndarray,
     vis: np.ndarray,
-    bones: List[Bone],
-    name_to_bone: Dict[str, Bone],
+    model: PmxModel,
     axis_x: float,
     axis_y: float,
     axis_z: float,
     vis_th: float = 0.2,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Tuple[float, float, float]]]:
+    """Build bone rotations from MediaPipe landmarks.
+    
+    Args:
+        points: MediaPipe 3D landmarks (33 points)
+        vis: Visibility scores for each landmark
+        model: PMX model data
+        axis_x, axis_y, axis_z: Axis scaling factors
+        vis_th: Visibility threshold
+        
+    Returns:
+        Tuple of (bone_quaternions, bone_translations)
+    """
     M = np.diag([axis_x, axis_y, axis_z]).astype(np.float64)
     points_mapped = points @ M.T
 
-    scale = compute_scale(points_mapped, name_to_bone)
-    pmx_hip = 0.5 * (name_to_bone["左足"].pos + name_to_bone["右足"].pos)
+    scale = compute_scale(points_mapped, model)
+    
+    # Build bone lookup
+    name_to_bone = {bone.name: bone for bone in model.bones}
+    bones = model.bones
+    
+    pmx_hip = 0.5 * (name_to_bone["左足"].position + name_to_bone["右足"].position)
 
     def mp_to_pmx(pt: np.ndarray) -> np.ndarray:
         return pmx_hip + scale * pt
@@ -281,7 +265,7 @@ def build_rotations(
 
     Qw: Dict[str, np.ndarray] = {}
 
-    model_forward_hint = _norm(name_to_bone["左つま先"].pos - name_to_bone["左足首"].pos)
+    model_forward_hint = _norm(name_to_bone["左つま先"].position - name_to_bone["左足首"].position)
     model_forward_hint[1] = 0.0
     if np.linalg.norm(model_forward_hint) < 1e-6:
         model_forward_hint = np.array([0.0, 0.0, -1.0], dtype=np.float64)
@@ -300,8 +284,8 @@ def build_rotations(
         pose_fhint = nose - shoC
         R_pose = torso_basis_pose(pose_right, pose_up, pose_fhint)
 
-        rest_right = name_to_bone["右足"].pos - name_to_bone["左足"].pos
-        rest_up = name_to_bone["上半身"].pos - name_to_bone["下半身"].pos
+        rest_right = name_to_bone["右足"].position - name_to_bone["左足"].position
+        rest_up = name_to_bone["上半身"].position - name_to_bone["下半身"].position
         R_rest = torso_basis_rest(rest_right, rest_up)
         Qw["下半身"] = rot_from_basis(R_rest, R_pose)
 
@@ -311,8 +295,8 @@ def build_rotations(
         pose_fhint = nose - earC
         R_pose = torso_basis_pose(pose_right, pose_up, pose_fhint)
 
-        rest_right = name_to_bone["右肩"].pos - name_to_bone["左肩"].pos
-        rest_up = name_to_bone["上半身2"].pos - name_to_bone["上半身"].pos
+        rest_right = name_to_bone["右肩"].position - name_to_bone["左肩"].position
+        rest_up = name_to_bone["上半身2"].position - name_to_bone["上半身"].position
         R_rest = torso_basis_rest(rest_right, rest_up)
         Qw["上半身"] = rot_from_basis(R_rest, R_pose)
 
@@ -322,8 +306,8 @@ def build_rotations(
         pose_fhint = nose - earC
         R_pose = torso_basis_pose(pose_right, pose_up, pose_fhint)
 
-        rest_right = name_to_bone["右肩"].pos - name_to_bone["左肩"].pos
-        rest_up = name_to_bone["首"].pos - name_to_bone["上半身2"].pos
+        rest_right = name_to_bone["右肩"].position - name_to_bone["左肩"].position
+        rest_up = name_to_bone["首"].position - name_to_bone["上半身2"].position
         R_rest = torso_basis_rest(rest_right, rest_up)
         Qw["上半身2"] = rot_from_basis(R_rest, R_pose)
 
@@ -410,8 +394,8 @@ def build_rotations(
         palm_n = _norm(palm_n)
 
         if bn_index1 in name_to_bone and bn_pinky1 in name_to_bone:
-            rest_vi = _norm(name_to_bone[bn_index1].pos - name_to_bone[bn_wrist].pos)
-            rest_vp = _norm(name_to_bone[bn_pinky1].pos - name_to_bone[bn_wrist].pos)
+            rest_vi = _norm(name_to_bone[bn_index1].position - name_to_bone[bn_wrist].position)
+            rest_vp = _norm(name_to_bone[bn_pinky1].position - name_to_bone[bn_wrist].position)
             rest_pn = np.cross(rest_vi, rest_vp)
             if np.linalg.norm(rest_pn) < 1e-6:
                 rest_pn = np.array([0.0, 0.0, 1.0], dtype=np.float64)
@@ -453,8 +437,8 @@ def build_rotations(
             ank_pmx = mp_to_pmx(points_mapped[ank])
             toe_pmx = mp_to_pmx(points_mapped[toe])
 
-            bone_trans[bn_ik] = tuple((ank_pmx - name_to_bone[bn_ik].pos).tolist())
-            bone_trans[bn_toeik] = tuple((toe_pmx - name_to_bone[bn_toeik].pos).tolist())
+            bone_trans[bn_ik] = tuple((ank_pmx - name_to_bone[bn_ik].position).tolist())
+            bone_trans[bn_toeik] = tuple((toe_pmx - name_to_bone[bn_toeik].position).tolist())
 
             foot_dir = toe_pmx - ank_pmx
             foot_dir[1] = 0.0
@@ -464,7 +448,7 @@ def build_rotations(
 
     if "センター" in name_to_bone:
         rest_toe_y = 0.5 * (
-            name_to_bone["左つま先ＩＫ"].pos[1] + name_to_bone["右つま先ＩＫ"].pos[1]
+            name_to_bone["左つま先ＩＫ"].position[1] + name_to_bone["右つま先ＩＫ"].position[1]
         )
         if np.min(vis[[MP["L_FOO"], MP["R_FOO"]]]) > vis_th:
             toe_y_now = 0.5 * (mp_to_pmx(points_mapped[MP["L_FOO"]])[1] + mp_to_pmx(points_mapped[MP["R_FOO"]])[1])
@@ -505,8 +489,25 @@ def generate_vpd_from_image(
     print_vpd: bool,
     print_debug: bool,
 ) -> str:
-    adapter = PmxAdapter(pmx_path)
-    model_name, bones, name_to_bone = _bones_from_adapter(adapter)
+    """Generate VPD file from image and PMX model.
+    
+    Args:
+        image_path: Path to input image
+        pmx_path: Path to PMX model file
+        out_path: Path to output VPD file
+        task_model: Path to MediaPipe task model (optional)
+        model_type: Model type for MediaPipe
+        axis_x, axis_y, axis_z: Axis scaling factors
+        vis_th: Visibility threshold
+        det_conf: Detection confidence threshold
+        print_vpd: Whether to print VPD content
+        print_debug: Whether to print debug info
+        
+    Returns:
+        VPD file content as string
+    """
+    # Load PMX model using new API
+    model = load_pmx(pmx_path)
 
     image = cv2.imread(image_path)
     if image is None:
@@ -528,15 +529,14 @@ def generate_vpd_from_image(
     Ql, trans = build_rotations(
         points,
         vis,
-        bones,
-        name_to_bone,
+        model,
         axis_x=axis_x,
         axis_y=axis_y,
         axis_z=axis_z,
         vis_th=vis_th,
     )
 
-    vpd_text = write_vpd(out_path, model_name, Ql, trans)
+    vpd_text = write_vpd(out_path, model.model_name, Ql, trans)
     print(f"OK: {out_path}")
     print(f"Bones written: {len(set(list(Ql.keys()) + list(trans.keys())))}")
 
@@ -545,7 +545,7 @@ def generate_vpd_from_image(
         print("vis(L_SHO,R_SHO,L_HIP,R_HIP,NOSE)=", [float(vis[i]) for i in key])
         M = np.diag([axis_x, axis_y, axis_z]).astype(np.float64)
         points_mapped = points @ M.T
-        sc = compute_scale(points_mapped, name_to_bone)
+        sc = compute_scale(points_mapped, model)
         print("scale(mp->pmx)=", sc)
 
     if print_vpd:
