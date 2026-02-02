@@ -36,6 +36,12 @@ PY
 python -m mmd_trace trace --video input.mp4 --pmx model.pmx --out out_dir --config config.yaml --smooth
 ```
 
+Generate a VPD pose from a single image:
+
+```bash
+python -m mmd_trace pose-vpd --pmx model.pmx --image input.png --out pose.vpd --print_vpd --print_debug
+```
+
 Disable smoothing:
 
 ```bash

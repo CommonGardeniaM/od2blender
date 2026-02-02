@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
-import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -11,52 +9,13 @@ import cv2
 import numpy as np
 
 import mediapipe as mp
-from mediapipe.tasks.python.components.containers.landmark import NormalizedLandmark
+from mediapipe.tasks.python.components.containers.landmark import Landmark, NormalizedLandmark
 from mediapipe.tasks.python.vision.pose_landmarker import PoseLandmarker, PoseLandmarkerResult
 
 LOG = logging.getLogger(__name__)
 
-# MediaPipe モデルのURL
-MODEL_URLS = {
-    "lite": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-    "full": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
-    "heavy": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task",
-}
-
-
-def download_model(model_type: str = "full", cache_dir: Optional[str] = None) -> str:
-    """MediaPipeモデルをダウンロードしてキャッシュする。"""
-    if model_type not in MODEL_URLS:
-        raise ValueError(f"Unknown model type: {model_type}. Choose from: {list(MODEL_URLS.keys())}")
-    
-    if cache_dir is None:
-        cache_dir = Path.home() / ".cache" / "mmd_trace" / "models"
-    else:
-        cache_dir = Path(cache_dir)
-    
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    
-    model_path = cache_dir / f"pose_landmarker_{model_type}.task"
-    
-    if model_path.exists():
-        LOG.info(f"Using cached model: {model_path}")
-        return str(model_path)
-    
-    url = MODEL_URLS[model_type]
-    LOG.info(f"Downloading MediaPipe model ({model_type})...")
-    LOG.info(f"  From: {url}")
-    LOG.info(f"  To: {model_path}")
-    
-    try:
-        urllib.request.urlretrieve(url, model_path)
-        LOG.info(f"Model downloaded successfully")
-    except Exception as e:
-        LOG.error(f"Failed to download model: {e}")
-        if model_path.exists():
-            model_path.unlink()
-        raise
-    
-    return str(model_path)
+# 固定のモデルパス
+DEFAULT_MODEL_PATH = Path(r"C:\Users\commo\Desktop\dev\python\od2blender\models\pose_landmarker_heavy.task")
 
 
 @dataclass
@@ -86,7 +45,7 @@ class Landmark3D:
         cls,
         index: int,
         name: str,
-        landmark: NormalizedLandmark,
+        landmark: NormalizedLandmark | Landmark,
     ) -> "Landmark3D":
         # MediaPipeはOptional[float]を返す可能性があるためデフォルト値を使用
         return cls(
@@ -189,9 +148,9 @@ class MediaPipePoseProvider:
         self.min_pose_presence_confidence = min_pose_presence_confidence
         self.min_tracking_confidence = min_tracking_confidence
         
-        # モデルパスが指定されていない場合は自動ダウンロード
+        # モデルパスが指定されていない場合は固定パスを使用
         if model_asset_path is None:
-            model_asset_path = download_model(model_type)
+            model_asset_path = str(DEFAULT_MODEL_PATH)
         
         # MediaPipe PoseLandmarkerの初期化
         base_options = mp.tasks.BaseOptions(model_asset_path=model_asset_path)
@@ -206,20 +165,20 @@ class MediaPipePoseProvider:
         )
         self.detector = PoseLandmarker.create_from_options(options)
         LOG.info("MediaPipe PoseLandmarker initialized")
-    
-    def detect_pose(self, image: np.ndarray) -> Optional[PoseFrame3D]:
-        """単一画像から33点3Dポーズを検出。"""
-        # BGR -> RGB 変換
+
+    def _detect(self, image: np.ndarray) -> PoseLandmarkerResult:
+        """Run PoseLandmarker on the input image."""
         if image.shape[2] == 3:
             rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
             rgb_image = image
-        
-        # MediaPipe Image形式に変換
+
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-        
-        # 検出実行
-        result: PoseLandmarkerResult = self.detector.detect(mp_image)
+        return self.detector.detect(mp_image)
+    
+    def detect_pose(self, image: np.ndarray) -> Optional[PoseFrame3D]:
+        """単一画像から33点3Dポーズを検出。"""
+        result = self._detect(image)
         
         if not result.pose_landmarks:
             LOG.warning("No pose detected in image")
@@ -238,6 +197,42 @@ class MediaPipePoseProvider:
         
         LOG.info(f"Detected {len(pose_frame.landmarks)} landmarks")
         return pose_frame
+
+    def detect_pose_world(self, image: np.ndarray) -> Optional[PoseFrame3D]:
+        """単一画像から33点3Dワールド座標ポーズを検出。"""
+        result = self._detect(image)
+
+        if not result.pose_world_landmarks:
+            LOG.warning("No pose world landmarks detected in image")
+            return None
+
+        landmarks = result.pose_world_landmarks[0]
+        pose_frame = PoseFrame3D(frame_id=0)
+
+        for i, landmark in enumerate(landmarks):
+            name = LANDMARK_NAMES[i] if i < len(LANDMARK_NAMES) else f"landmark_{i}"
+            pose_frame.landmarks.append(
+                Landmark3D.from_mediapipe_landmark(i, name, landmark)
+            )
+
+        LOG.info(f"Detected {len(pose_frame.landmarks)} world landmarks")
+        return pose_frame
+
+    def detect_pose_world_np(self, image: np.ndarray) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """ワールド座標の33点ランドマークをNumPy配列で返す。"""
+        result = self._detect(image)
+
+        if not result.pose_world_landmarks:
+            LOG.warning("No pose world landmarks detected in image")
+            return None
+
+        landmarks = result.pose_world_landmarks[0]
+        points = np.array([[lm.x, lm.y, lm.z] for lm in landmarks], dtype=np.float64)
+        vis = np.array([
+            lm.visibility if lm.visibility is not None else 1.0
+            for lm in landmarks
+        ], dtype=np.float64)
+        return points, vis
     
     def detect_from_file(self, image_path: str) -> Optional[PoseFrame3D]:
         """画像ファイルから33点3Dポーズを検出。"""
