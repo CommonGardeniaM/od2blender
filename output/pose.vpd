@@ -1,0 +1,9 @@
+Vocaloid Pose Data file
+
+Millial_forMMD_v1.0.0.osm;		// 親ファイル名
+1;				// 総ポーズボーン数
+
+Bone1{上半身
+  0.000000,0.000000,0.000000;				// trans x,y,z
+  0.030787,-0.109245,-0.097565,0.988736;		// Quatanion x,y,z,w
+}
