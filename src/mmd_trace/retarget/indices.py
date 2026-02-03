@@ -1,4 +1,5 @@
 """Landmark indices and connections."""
+
 from __future__ import annotations
 
 POSE_IDX: dict[str, int] = {

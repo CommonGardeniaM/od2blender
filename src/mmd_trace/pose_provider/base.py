@@ -1,4 +1,5 @@
 """Pose provider base types and factory."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

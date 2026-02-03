@@ -1,19 +1,22 @@
 """PMX file parser - full implementation for PMX 2.0/2.1 format."""
+
 from __future__ import annotations
 
 import struct
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
-import numpy as np
 
+import numpy as np
 
 # =============================================================================
 # Enums and Constants
 # =============================================================================
 
+
 class PmxWeightType:
     """Weight deformation types."""
+
     BDEF1 = 0
     BDEF2 = 1
     BDEF4 = 2
@@ -23,6 +26,7 @@ class PmxWeightType:
 
 class PmxBoneFlag:
     """Bone flags (first byte)."""
+
     INDEXED_TAIL = 0x0001
     ROTATABLE = 0x0002
     TRANSLATABLE = 0x0004
@@ -38,6 +42,7 @@ class PmxBoneFlag:
 
 class PmxMorphType:
     """Morph types."""
+
     GROUP = 0
     VERTEX = 1
     BONE = 2
@@ -53,6 +58,7 @@ class PmxMorphType:
 
 class PmxRigidShape:
     """Rigid body shape types."""
+
     SPHERE = 0
     BOX = 1
     CAPSULE = 2
@@ -60,6 +66,7 @@ class PmxRigidShape:
 
 class PmxRigidType:
     """Rigid body physics types."""
+
     STATIC = 0
     DYNAMIC = 1
     DYNAMIC2 = 2  # Connected
@@ -67,6 +74,7 @@ class PmxRigidType:
 
 class PmxJointType:
     """Joint types."""
+
     SPRING6DOF = 0
     PMX6DOF = 1  # PMX 2.1
     PMXP2P = 2  # PMX 2.1
@@ -79,9 +87,11 @@ class PmxJointType:
 # Data Classes - Header and Globals
 # =============================================================================
 
+
 @dataclass
 class PmxHeader:
     """PMX file header."""
+
     magic: str
     version: float
     globals_count: int
@@ -90,6 +100,7 @@ class PmxHeader:
 @dataclass
 class PmxGlobals:
     """PMX global settings affecting file layout."""
+
     text_encoding: int  # 0=UTF16LE, 1=UTF8
     additional_vec4_count: int  # 0-4
     vertex_index_size: int  # 1, 2, or 4
@@ -107,6 +118,7 @@ class PmxGlobals:
 @dataclass
 class PmxModelInfo:
     """Model information."""
+
     name: str
     name_en: str
     comment: str
@@ -117,9 +129,11 @@ class PmxModelInfo:
 # Data Classes - Geometry
 # =============================================================================
 
+
 @dataclass
 class PmxVertex:
     """Vertex data."""
+
     index: int
     position: np.ndarray  # [3] float
     normal: np.ndarray  # [3] float
@@ -137,12 +151,14 @@ class PmxVertex:
 @dataclass
 class PmxFace:
     """Face (triangle) indices."""
+
     indices: tuple[int, int, int]
 
 
 @dataclass
 class PmxTexture:
     """Texture path."""
+
     index: int
     path: str
 
@@ -151,9 +167,11 @@ class PmxTexture:
 # Data Classes - Materials
 # =============================================================================
 
+
 @dataclass
 class PmxMaterial:
     """Material data."""
+
     index: int
     name: str
     name_en: str
@@ -177,9 +195,11 @@ class PmxMaterial:
 # Data Classes - Bones (Full)
 # =============================================================================
 
+
 @dataclass
 class PmxBoneInherit:
     """Rotation/translation inheritance."""
+
     parent_index: int
     rate: float
 
@@ -187,6 +207,7 @@ class PmxBoneInherit:
 @dataclass
 class PmxBoneIkLink:
     """IK link with optional angle limits."""
+
     bone_index: int
     has_limits: bool
     min_limit: np.ndarray | None = None  # [3] radians
@@ -196,6 +217,7 @@ class PmxBoneIkLink:
 @dataclass
 class PmxBoneIk:
     """IK information."""
+
     target_index: int
     loop_count: int
     limit_radian: float
@@ -205,6 +227,7 @@ class PmxBoneIk:
 @dataclass
 class PmxBone:
     """Complete bone data."""
+
     index: int
     name: str
     name_en: str
@@ -277,15 +300,18 @@ class PmxBone:
 # Data Classes - Morphs
 # =============================================================================
 
+
 @dataclass
 class PmxMorphOffset:
     """Base class for morph offsets."""
+
     pass
 
 
 @dataclass
 class PmxMorphVertexOffset(PmxMorphOffset):
     """Vertex position morph."""
+
     vertex_index: int
     translation: np.ndarray  # [3] float
 
@@ -293,6 +319,7 @@ class PmxMorphVertexOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphUvOffset(PmxMorphOffset):
     """UV morph."""
+
     vertex_index: int
     values: np.ndarray  # [4] float
 
@@ -300,6 +327,7 @@ class PmxMorphUvOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphBoneOffset(PmxMorphOffset):
     """Bone morph."""
+
     bone_index: int
     translation: np.ndarray  # [3] float
     rotation: np.ndarray  # [4] quaternion (x,y,z,w)
@@ -308,6 +336,7 @@ class PmxMorphBoneOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphMaterialOffset(PmxMorphOffset):
     """Material morph."""
+
     material_index: int
     calc_mode: int  # 0=multiply, 1=add
     diffuse: np.ndarray  # [4] RGBA
@@ -324,6 +353,7 @@ class PmxMorphMaterialOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphGroupOffset(PmxMorphOffset):
     """Group morph."""
+
     morph_index: int
     rate: float
 
@@ -331,6 +361,7 @@ class PmxMorphGroupOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphFlipOffset(PmxMorphOffset):
     """Flip morph (PMX 2.1)."""
+
     morph_index: int
     rate: float
 
@@ -338,6 +369,7 @@ class PmxMorphFlipOffset(PmxMorphOffset):
 @dataclass
 class PmxMorphImpulseOffset(PmxMorphOffset):
     """Impulse morph (PMX 2.1)."""
+
     rigidbody_index: int
     local: bool
     translation_velocity: np.ndarray  # [3]
@@ -347,6 +379,7 @@ class PmxMorphImpulseOffset(PmxMorphOffset):
 @dataclass
 class PmxMorph:
     """Complete morph data."""
+
     index: int
     name: str
     name_en: str
@@ -359,9 +392,11 @@ class PmxMorph:
 # Data Classes - Display Frame
 # =============================================================================
 
+
 @dataclass
 class PmxDisplayFrameItem:
     """Item in display frame."""
+
     item_type: int  # 0=bone, 1=morph
     index: int
 
@@ -369,6 +404,7 @@ class PmxDisplayFrameItem:
 @dataclass
 class PmxDisplayFrame:
     """Display frame (bone/morph group for UI)."""
+
     index: int
     name: str
     name_en: str
@@ -380,9 +416,11 @@ class PmxDisplayFrame:
 # Data Classes - Physics
 # =============================================================================
 
+
 @dataclass
 class PmxRigidbody:
     """Rigid body for physics."""
+
     index: int
     name: str
     name_en: str
@@ -404,6 +442,7 @@ class PmxRigidbody:
 @dataclass
 class PmxJoint:
     """Joint (constraint) between rigid bodies."""
+
     index: int
     name: str
     name_en: str
@@ -424,6 +463,7 @@ class PmxJoint:
 @dataclass
 class PmxSoftbody:
     """Soft body (PMX 2.1)."""
+
     index: int
     name: str
     name_en: str
@@ -467,9 +507,11 @@ class PmxSoftbody:
 # Main Model Class
 # =============================================================================
 
+
 @dataclass
 class PmxModel:
     """Complete PMX model data."""
+
     # Header & Info
     header: PmxHeader
     globals: PmxGlobals
@@ -541,27 +583,37 @@ class PmxModel:
         # Check bone parent references
         for bone in self.bones:
             if bone.parent_index >= len(self.bones):
-                issues.append(f"Bone {bone.index} ({bone.name}) has invalid parent index {bone.parent_index}")
+                issues.append(
+                    f"Bone {bone.index} ({bone.name}) has invalid parent index {bone.parent_index}"
+                )
 
         # Check tail references
         for bone in self.bones:
             if bone.has_indexed_tail and bone.tail_index is not None:
                 if bone.tail_index >= len(self.bones):
-                    issues.append(f"Bone {bone.index} ({bone.name}) has invalid tail index {bone.tail_index}")
+                    issues.append(
+                        f"Bone {bone.index} ({bone.name}) has invalid tail index {bone.tail_index}"
+                    )
 
         # Check IK references
         for bone in self.bones:
             if bone.has_ik and bone.ik:
                 if bone.ik.target_index >= len(self.bones):
-                    issues.append(f"Bone {bone.index} ({bone.name}) IK has invalid target index {bone.ik.target_index}")
+                    issues.append(
+                        f"Bone {bone.index} ({bone.name}) IK has invalid target index {bone.ik.target_index}"
+                    )
                 for link in bone.ik.links:
                     if link.bone_index >= len(self.bones):
-                        issues.append(f"Bone {bone.index} ({bone.name}) IK link has invalid index {link.bone_index}")
+                        issues.append(
+                            f"Bone {bone.index} ({bone.name}) IK link has invalid index {link.bone_index}"
+                        )
 
         # Check material texture references
         for mat in self.materials:
             if mat.texture_index >= 0 and mat.texture_index >= len(self.textures):
-                issues.append(f"Material {mat.index} ({mat.name}) has invalid texture index {mat.texture_index}")
+                issues.append(
+                    f"Material {mat.index} ({mat.name}) has invalid texture index {mat.texture_index}"
+                )
 
         # Check face vertex references
         for face in self.faces:
@@ -577,7 +629,7 @@ class PmxModel:
 
     def get_bone_rest_direction(self, bone_index: int) -> np.ndarray:
         """Get rest direction (tail direction) for a bone in T/A-pose.
-        
+
         Returns normalized direction vector from bone position to tail.
         Falls back to +Y if no tail is defined.
         """
@@ -613,18 +665,22 @@ class PmxModel:
 
     def get_bone_rest_matrix(self, bone_index: int) -> np.ndarray:
         """Get 3x3 rotation matrix representing bone's rest orientation.
-        
+
         Constructs basis from:
         - If local axes are defined: uses X/Z axes and derives Y
         - Otherwise: uses tail direction as Y and derives X/Z from world axes
-        
+
         Returns 3x3 rotation matrix (column vectors are local axes).
         """
         bone = self.get_bone_by_index(bone_index)
         if bone is None:
             return np.eye(3, dtype=np.float64)
 
-        if bone.has_local_coord and bone.local_x_vector is not None and bone.local_z_vector is not None:
+        if (
+            bone.has_local_coord
+            and bone.local_x_vector is not None
+            and bone.local_z_vector is not None
+        ):
             x_axis = bone.local_x_vector.astype(np.float64)
             z_axis = bone.local_z_vector.astype(np.float64)
 
@@ -656,7 +712,7 @@ class PmxModel:
 
     def compute_bone_local_basis(self, bone_index: int) -> np.ndarray:
         """Compute basis matrix in parent-local space for motion capture.
-        
+
         This is the key function for MiKaPo-style retargeting:
         - Returns 3x3 matrix representing bone's orientation relative to parent
         - Used as reference to compute rotation deltas from T/A-pose
@@ -698,6 +754,7 @@ class PmxModel:
 # Binary Parser
 # =============================================================================
 
+
 class PmxBinaryReader:
     """Binary reader for PMX format."""
 
@@ -731,10 +788,20 @@ class PmxBinaryReader:
         return np.array([self.read_float(), self.read_float()], dtype=np.float32)
 
     def read_vec3(self) -> np.ndarray:
-        return np.array([self.read_float(), self.read_float(), self.read_float()], dtype=np.float32)
+        return np.array(
+            [self.read_float(), self.read_float(), self.read_float()], dtype=np.float32
+        )
 
     def read_vec4(self) -> np.ndarray:
-        return np.array([self.read_float(), self.read_float(), self.read_float(), self.read_float()], dtype=np.float32)
+        return np.array(
+            [
+                self.read_float(),
+                self.read_float(),
+                self.read_float(),
+                self.read_float(),
+            ],
+            dtype=np.float32,
+        )
 
     def read_string(self) -> str:
         length = self.read_int32()
@@ -931,20 +998,22 @@ class PmxParser:
 
             edge_scale = self.reader.read_float()
 
-            vertices.append(PmxVertex(
-                index=i,
-                position=position,
-                normal=normal,
-                uv=uv,
-                additional_uvs=additional_uvs,
-                weight_type=weight_type,
-                weight_bone_indices=bone_indices,
-                weight_values=weight_values,
-                sdef_c=sdef_c,
-                sdef_r0=sdef_r0,
-                sdef_r1=sdef_r1,
-                edge_scale=edge_scale,
-            ))
+            vertices.append(
+                PmxVertex(
+                    index=i,
+                    position=position,
+                    normal=normal,
+                    uv=uv,
+                    additional_uvs=additional_uvs,
+                    weight_type=weight_type,
+                    weight_bone_indices=bone_indices,
+                    weight_values=weight_values,
+                    sdef_c=sdef_c,
+                    sdef_r0=sdef_r0,
+                    sdef_r1=sdef_r1,
+                    edge_scale=edge_scale,
+                )
+            )
 
         return vertices
 
@@ -965,10 +1034,12 @@ class PmxParser:
         textures = []
 
         for i in range(count):
-            textures.append(PmxTexture(
-                index=i,
-                path=self.reader.read_string(),
-            ))
+            textures.append(
+                PmxTexture(
+                    index=i,
+                    path=self.reader.read_string(),
+                )
+            )
 
         return textures
 
@@ -999,25 +1070,27 @@ class PmxParser:
             meta_data = self.reader.read_string()
             surface_count = self.reader.read_int32()
 
-            materials.append(PmxMaterial(
-                index=i,
-                name=name,
-                name_en=name_en,
-                diffuse=diffuse,
-                specular=specular,
-                specular_power=specular_power,
-                ambient=ambient,
-                flags=flags,
-                edge_color=edge_color,
-                edge_scale=edge_scale,
-                texture_index=texture_index,
-                sphere_texture_index=sphere_texture_index,
-                sphere_mode=sphere_mode,
-                toon_mode=toon_mode,
-                toon_index=toon_index,
-                meta_data=meta_data,
-                surface_count=surface_count,
-            ))
+            materials.append(
+                PmxMaterial(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    diffuse=diffuse,
+                    specular=specular,
+                    specular_power=specular_power,
+                    ambient=ambient,
+                    flags=flags,
+                    edge_color=edge_color,
+                    edge_scale=edge_scale,
+                    texture_index=texture_index,
+                    sphere_texture_index=sphere_texture_index,
+                    sphere_mode=sphere_mode,
+                    toon_mode=toon_mode,
+                    toon_index=toon_index,
+                    meta_data=meta_data,
+                    surface_count=surface_count,
+                )
+            )
 
         return materials
 
@@ -1093,12 +1166,14 @@ class PmxParser:
                     if has_limits:
                         min_limit = self.reader.read_vec3()
                         max_limit = self.reader.read_vec3()
-                    links.append(PmxBoneIkLink(
-                        bone_index=link_index,
-                        has_limits=bool(has_limits),
-                        min_limit=min_limit,
-                        max_limit=max_limit,
-                    ))
+                    links.append(
+                        PmxBoneIkLink(
+                            bone_index=link_index,
+                            has_limits=bool(has_limits),
+                            min_limit=min_limit,
+                            max_limit=max_limit,
+                        )
+                    )
                 ik = PmxBoneIk(
                     target_index=target_index,
                     loop_count=loop_count,
@@ -1106,24 +1181,26 @@ class PmxParser:
                     links=links,
                 )
 
-            bones.append(PmxBone(
-                index=i,
-                name=name,
-                name_en=name_en,
-                position=position,
-                parent_index=parent_index,
-                layer=layer,
-                flags=flags,
-                tail_index=tail_index,
-                tail_offset=tail_offset,
-                inherit_rotation=inherit_rotation,
-                inherit_translation=inherit_translation,
-                fixed_axis=fixed_axis,
-                local_x_vector=local_x_vector,
-                local_z_vector=local_z_vector,
-                external_parent=external_parent,
-                ik=ik,
-            ))
+            bones.append(
+                PmxBone(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    position=position,
+                    parent_index=parent_index,
+                    layer=layer,
+                    flags=flags,
+                    tail_index=tail_index,
+                    tail_offset=tail_offset,
+                    inherit_rotation=inherit_rotation,
+                    inherit_translation=inherit_translation,
+                    fixed_axis=fixed_axis,
+                    local_x_vector=local_x_vector,
+                    local_z_vector=local_z_vector,
+                    external_parent=external_parent,
+                    ik=ik,
+                )
+            )
 
         return bones
 
@@ -1143,14 +1220,16 @@ class PmxParser:
                 offset = self._parse_morph_offset(morph_type)
                 offsets.append(offset)
 
-            morphs.append(PmxMorph(
-                index=i,
-                name=name,
-                name_en=name_en,
-                panel=panel,
-                morph_type=morph_type,
-                offsets=offsets,
-            ))
+            morphs.append(
+                PmxMorph(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    panel=panel,
+                    morph_type=morph_type,
+                    offsets=offsets,
+                )
+            )
 
         return morphs
 
@@ -1171,8 +1250,13 @@ class PmxParser:
                 translation=self.reader.read_vec3(),
                 rotation=self.reader.read_vec4(),
             )
-        elif morph_type in (PmxMorphType.UV, PmxMorphType.UV1,
-                           PmxMorphType.UV2, PmxMorphType.UV3, PmxMorphType.UV4):
+        elif morph_type in (
+            PmxMorphType.UV,
+            PmxMorphType.UV1,
+            PmxMorphType.UV2,
+            PmxMorphType.UV3,
+            PmxMorphType.UV4,
+        ):
             return PmxMorphUvOffset(
                 vertex_index=self.reader.read_vertex_index(),
                 values=self.reader.read_vec4(),
@@ -1225,13 +1309,15 @@ class PmxParser:
                     index = self.reader.read_morph_index()
                 items.append(PmxDisplayFrameItem(item_type=item_type, index=index))
 
-            frames.append(PmxDisplayFrame(
-                index=i,
-                name=name,
-                name_en=name_en,
-                special=special,
-                items=items,
-            ))
+            frames.append(
+                PmxDisplayFrame(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    special=special,
+                    items=items,
+                )
+            )
 
         return frames
 
@@ -1256,24 +1342,26 @@ class PmxParser:
             friction = self.reader.read_float()
             physics_type = self.reader.read_uint8()
 
-            rigidbodies.append(PmxRigidbody(
-                index=i,
-                name=name,
-                name_en=name_en,
-                bone_index=bone_index,
-                collision_group=collision_group,
-                collision_mask=collision_mask,
-                shape=shape,
-                shape_size=shape_size,
-                position=position,
-                rotation=rotation,
-                mass=mass,
-                damping_linear=damping_linear,
-                damping_angular=damping_angular,
-                restitution=restitution,
-                friction=friction,
-                physics_type=physics_type,
-            ))
+            rigidbodies.append(
+                PmxRigidbody(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    bone_index=bone_index,
+                    collision_group=collision_group,
+                    collision_mask=collision_mask,
+                    shape=shape,
+                    shape_size=shape_size,
+                    position=position,
+                    rotation=rotation,
+                    mass=mass,
+                    damping_linear=damping_linear,
+                    damping_angular=damping_angular,
+                    restitution=restitution,
+                    friction=friction,
+                    physics_type=physics_type,
+                )
+            )
 
         return rigidbodies
 
@@ -1300,22 +1388,24 @@ class PmxParser:
                 spring_linear = self.reader.read_vec3()
                 spring_angular = self.reader.read_vec3()
 
-            joints.append(PmxJoint(
-                index=i,
-                name=name,
-                name_en=name_en,
-                joint_type=joint_type,
-                rigidbody_a=rigidbody_a,
-                rigidbody_b=rigidbody_b,
-                position=position,
-                rotation=rotation,
-                linear_min=linear_min,
-                linear_max=linear_max,
-                angular_min=angular_min,
-                angular_max=angular_max,
-                spring_linear=spring_linear,
-                spring_angular=spring_angular,
-            ))
+            joints.append(
+                PmxJoint(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    joint_type=joint_type,
+                    rigidbody_a=rigidbody_a,
+                    rigidbody_b=rigidbody_b,
+                    position=position,
+                    rotation=rotation,
+                    linear_min=linear_min,
+                    linear_max=linear_max,
+                    angular_min=angular_min,
+                    angular_max=angular_max,
+                    spring_linear=spring_linear,
+                    spring_angular=spring_angular,
+                )
+            )
 
         return joints
 
@@ -1377,45 +1467,47 @@ class PmxParser:
             for _ in range(pin_count):
                 pins.append(self.reader.read_vertex_index())
 
-            softbodies.append(PmxSoftbody(
-                index=i,
-                name=name,
-                name_en=name_en,
-                shape=shape,
-                material_index=material_index,
-                group=group,
-                collision_mask=collision_mask,
-                flags=flags,
-                b_link_distance=b_link_distance,
-                cluster_count=cluster_count,
-                total_mass=total_mass,
-                collision_margin=collision_margin,
-                aero_model=aero_model,
-                cfg_k_vcf=cfg_k_vcf,
-                cfg_k_dp=cfg_k_dp,
-                cfg_k_dg=cfg_k_dg,
-                cfg_k_lf=cfg_k_lf,
-                cfg_k_pr=cfg_k_pr,
-                cfg_k_vc=cfg_k_vc,
-                cfg_k_df=cfg_k_df,
-                cfg_k_mt=cfg_k_mt,
-                cfg_k_chr=cfg_k_chr,
-                cfg_k_khr=cfg_k_khr,
-                cfg_k_shr=cfg_k_shr,
-                cfg_k_ahr=cfg_k_ahr,
-                cluster_k_srhr_cl=cluster_k_srhr_cl,
-                cluster_k_skhr_cl=cluster_k_skhr_cl,
-                cluster_k_sshr_cl=cluster_k_sshr_cl,
-                cluster_k_sr_splt_cl=cluster_k_sr_splt_cl,
-                cluster_k_sk_splt_cl=cluster_k_sk_splt_cl,
-                cluster_k_ss_splt_cl=cluster_k_ss_splt_cl,
-                cluster_k_vcf=cluster_k_vcf,
-                cluster_k_dp=cluster_k_dp,
-                cluster_k_drag=cluster_k_drag,
-                cluster_k_pr=cluster_k_pr,
-                anchors=anchors,
-                vertex_pins=pins,
-            ))
+            softbodies.append(
+                PmxSoftbody(
+                    index=i,
+                    name=name,
+                    name_en=name_en,
+                    shape=shape,
+                    material_index=material_index,
+                    group=group,
+                    collision_mask=collision_mask,
+                    flags=flags,
+                    b_link_distance=b_link_distance,
+                    cluster_count=cluster_count,
+                    total_mass=total_mass,
+                    collision_margin=collision_margin,
+                    aero_model=aero_model,
+                    cfg_k_vcf=cfg_k_vcf,
+                    cfg_k_dp=cfg_k_dp,
+                    cfg_k_dg=cfg_k_dg,
+                    cfg_k_lf=cfg_k_lf,
+                    cfg_k_pr=cfg_k_pr,
+                    cfg_k_vc=cfg_k_vc,
+                    cfg_k_df=cfg_k_df,
+                    cfg_k_mt=cfg_k_mt,
+                    cfg_k_chr=cfg_k_chr,
+                    cfg_k_khr=cfg_k_khr,
+                    cfg_k_shr=cfg_k_shr,
+                    cfg_k_ahr=cfg_k_ahr,
+                    cluster_k_srhr_cl=cluster_k_srhr_cl,
+                    cluster_k_skhr_cl=cluster_k_skhr_cl,
+                    cluster_k_sshr_cl=cluster_k_sshr_cl,
+                    cluster_k_sr_splt_cl=cluster_k_sr_splt_cl,
+                    cluster_k_sk_splt_cl=cluster_k_sk_splt_cl,
+                    cluster_k_ss_splt_cl=cluster_k_ss_splt_cl,
+                    cluster_k_vcf=cluster_k_vcf,
+                    cluster_k_dp=cluster_k_dp,
+                    cluster_k_drag=cluster_k_drag,
+                    cluster_k_pr=cluster_k_pr,
+                    anchors=anchors,
+                    vertex_pins=pins,
+                )
+            )
 
         return softbodies
 
@@ -1423,6 +1515,7 @@ class PmxParser:
 # =============================================================================
 # Public API
 # =============================================================================
+
 
 def load_pmx(path: str | Path) -> PmxModel:
     """Load PMX file and return complete model data."""

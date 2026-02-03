@@ -9,9 +9,10 @@ from mmd_trace.io.pmx import PmxModel
 
 from .bone_resolver import BoneResolver
 from .indices import POSE_IDX
-from .quat import IDENTITY_QUAT, apply, from_two_vectors, inv, mul
+from .quat import IDENTITY_QUAT, apply, from_matrix, from_two_vectors, inv, mul
 
 EPS = 1e-9
+ROLL_BASE = np.array([0.0, 1.0, 0.0], dtype=np.float64)
 
 
 @dataclass
@@ -24,6 +25,7 @@ class Solver3D:
     bone_local: dict[str, np.ndarray] = field(init=False, default_factory=dict)
     bone_world: dict[str, np.ndarray] = field(init=False, default_factory=dict)
     centers: dict[str, np.ndarray] = field(init=False, default_factory=dict)
+    rest_local_cache: dict[str, np.ndarray] = field(init=False, default_factory=dict)
 
     def __post_init__(self) -> None:
         self.resolver = BoneResolver(self.model)
@@ -63,11 +65,30 @@ class Solver3D:
         parent = self.resolver.parent_name(bone_name)
         if parent is None:
             return IDENTITY_QUAT.copy()
-        return self.bone_world.get(parent, IDENTITY_QUAT.copy())
+        parent_world = self.bone_world.get(parent)
+        if parent_world is not None:
+            return parent_world
+        parent_bone = self.resolver.get_bone(parent)
+        if parent_bone is None:
+            return IDENTITY_QUAT.copy()
+        return from_matrix(self.model.get_bone_rest_matrix(parent_bone.index))
+
+    def _rest_local_quat(self, bone_name: str) -> np.ndarray:
+        cached = self.rest_local_cache.get(bone_name)
+        if cached is not None:
+            return cached
+        bone = self.resolver.get_bone(bone_name)
+        if bone is None:
+            quat = IDENTITY_QUAT.copy()
+        else:
+            quat = from_matrix(self.model.compute_bone_local_basis(bone.index))
+        self.rest_local_cache[bone_name] = quat
+        return quat
 
     def _set_local(self, bone_name: str, quat_local: np.ndarray) -> None:
         parent_world = self._get_parent_world(bone_name)
-        quat_world = mul(parent_world, quat_local)
+        rest_local = self._rest_local_quat(bone_name)
+        quat_world = mul(parent_world, mul(rest_local, quat_local))
         self.bone_local[bone_name] = quat_local
         self.bone_world[bone_name] = quat_world
 
@@ -75,12 +96,11 @@ class Solver3D:
         bone_name = self.resolver.bone(bone_key)
         if bone_name is None or target_world is None:
             return
-        ref_local = self.resolver.ref_dir_in_parent(bone_name)
-        if ref_local is None:
-            return
         parent_world = self._get_parent_world(bone_name)
         target_local = apply(inv(parent_world), target_world)
-        quat_local = from_two_vectors(ref_local, target_local)
+        rest_local = self._rest_local_quat(bone_name)
+        target_bone = apply(inv(rest_local), target_local)
+        quat_local = from_two_vectors(ROLL_BASE, target_bone)
         self._set_local(bone_name, quat_local)
 
     def _compute_centers(self, points: np.ndarray, vis: np.ndarray | None) -> None:
@@ -109,11 +129,11 @@ class Solver3D:
         lhip = self._pose_pt(points, vis, "left_hip")
         rhip = self._pose_pt(points, vis, "right_hip")
         hip_dir = self._dir(rhip, lhip)
-        self._align("lower_body", hip_dir)
-
         hip_center = self.centers.get("hip_center")
         shoulder_center = self.centers.get("shoulder_center")
         spine_dir = self._dir(hip_center, shoulder_center)
+        lower_body_dir = spine_dir if spine_dir is not None else hip_dir
+        self._align("lower_body", lower_body_dir)
         self._align("upper_body", spine_dir)
 
         ear_center = self.centers.get("ear_center")

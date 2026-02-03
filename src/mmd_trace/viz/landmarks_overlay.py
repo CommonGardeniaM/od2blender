@@ -1,4 +1,5 @@
 """2D overlay for pose landmarks."""
+
 from __future__ import annotations
 
 import logging
@@ -54,7 +55,13 @@ def draw_landmarks(
         y_start = int(start[1] * height)
         x_end = int(end[0] * width)
         y_end = int(end[1] * height)
-        cv2.line(vis_image, (x_start, y_start), (x_end, y_end), CONNECTION_COLOR, CONNECTION_THICKNESS)
+        cv2.line(
+            vis_image,
+            (x_start, y_start),
+            (x_end, y_end),
+            CONNECTION_COLOR,
+            CONNECTION_THICKNESS,
+        )
 
     for point_index, point in enumerate(image_points):
         x_pixel = int(point[0] * width)
@@ -66,7 +73,11 @@ def draw_landmarks(
         if show_labels or show_confidence:
             parts = []
             if show_labels:
-                name = LANDMARK_NAMES[point_index] if point_index < len(LANDMARK_NAMES) else str(point_index)
+                name = (
+                    LANDMARK_NAMES[point_index]
+                    if point_index < len(LANDMARK_NAMES)
+                    else str(point_index)
+                )
                 parts.append(f"{point_index}:{name}")
             if show_confidence:
                 parts.append(f"v={visibility:.2f}")

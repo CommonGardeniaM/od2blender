@@ -1,4 +1,5 @@
 """MediaPipe pose provider."""
+
 from __future__ import annotations
 
 import logging
@@ -7,7 +8,10 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 import numpy as np
-from mediapipe.tasks.python.vision.pose_landmarker import PoseLandmarker, PoseLandmarkerResult
+from mediapipe.tasks.python.vision.pose_landmarker import (
+    PoseLandmarker,
+    PoseLandmarkerResult,
+)
 
 from .base import PoseBundleNp
 
@@ -57,15 +61,25 @@ class MediaPipePoseProvider:
         world_landmarks = result.pose_world_landmarks[0]
         image_landmarks = result.pose_landmarks[0]
 
-        world_points = np.array([[lm.x, lm.y, lm.z] for lm in world_landmarks], dtype=np.float64)
+        world_points = np.array(
+            [[lm.x, lm.y, lm.z] for lm in world_landmarks], dtype=np.float64
+        )
         world_vis = np.array(
-            [lm.visibility if lm.visibility is not None else 1.0 for lm in world_landmarks],
+            [
+                lm.visibility if lm.visibility is not None else 1.0
+                for lm in world_landmarks
+            ],
             dtype=np.float64,
         )
 
-        image_points = np.array([[lm.x, lm.y, lm.z] for lm in image_landmarks], dtype=np.float64)
+        image_points = np.array(
+            [[lm.x, lm.y, lm.z] for lm in image_landmarks], dtype=np.float64
+        )
         image_vis = np.array(
-            [lm.visibility if lm.visibility is not None else 1.0 for lm in image_landmarks],
+            [
+                lm.visibility if lm.visibility is not None else 1.0
+                for lm in image_landmarks
+            ],
             dtype=np.float64,
         )
 

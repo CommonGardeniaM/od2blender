@@ -1,4 +1,5 @@
 """VPD writer for MMD pose data."""
+
 from __future__ import annotations
 
 import numpy as np

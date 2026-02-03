@@ -1,4 +1,5 @@
 """Pose solver debug visualization."""
+
 from __future__ import annotations
 
 import logging
@@ -24,7 +25,9 @@ AXIS_COLORS = {
 }
 
 
-def _pose_point(points: np.ndarray, vis: np.ndarray | None, name: str, vis_th: float) -> np.ndarray | None:
+def _pose_point(
+    points: np.ndarray, vis: np.ndarray | None, name: str, vis_th: float
+) -> np.ndarray | None:
     index = POSE_IDX[name]
     if vis is not None and float(vis[index]) < vis_th:
         return None
@@ -93,7 +96,9 @@ def _origin_from_key(
     return None
 
 
-def _world_to_image(point: np.ndarray, points: np.ndarray, size: tuple[int, int]) -> tuple[int, int]:
+def _world_to_image(
+    point: np.ndarray, points: np.ndarray, size: tuple[int, int]
+) -> tuple[int, int]:
     height, width = size
     min_x, max_x = float(points[:, 0].min()), float(points[:, 0].max())
     min_y, max_y = float(points[:, 1].min()), float(points[:, 1].max())
@@ -206,16 +211,22 @@ def generate_debug_visualization(
             if quat_world is None:
                 continue
             if project == "2d":
-                origin = _origin_from_key(key, bundle.image_points, bundle.image_vis, vis_th)
+                origin = _origin_from_key(
+                    key, bundle.image_points, bundle.image_vis, vis_th
+                )
                 if origin is None:
                     continue
                 origin_x = int(origin[0] * width)
                 origin_y = int(origin[1] * height)
             else:
-                origin_world = _origin_from_key(key, result.pose_points, result.pose_vis, vis_th)
+                origin_world = _origin_from_key(
+                    key, result.pose_points, result.pose_vis, vis_th
+                )
                 if origin_world is None:
                     continue
-                origin_x, origin_y = _world_to_image(origin_world, result.pose_points, (height, width))
+                origin_x, origin_y = _world_to_image(
+                    origin_world, result.pose_points, (height, width)
+                )
             _draw_axes_2d(overlay, (origin_x, origin_y), quat_world, axis_length)
 
         cv2.imwrite(output_path_2d, overlay)

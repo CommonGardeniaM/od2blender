@@ -1,4 +1,5 @@
 """Quaternion utilities based on SciPy Rotation."""
+
 from __future__ import annotations
 
 import numpy as np

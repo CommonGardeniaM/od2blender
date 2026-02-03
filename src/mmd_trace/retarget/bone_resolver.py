@@ -1,12 +1,12 @@
 """PMX bone name resolution and rest references."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 import numpy as np
 
-from mmd_trace.io.pmx import PmxModel, PmxBone
-
+from mmd_trace.io.pmx import PmxBone, PmxModel
 
 BONE_CANDIDATES: dict[str, list[str]] = {
     "center": ["センター", "center"],
@@ -51,7 +51,10 @@ class BoneResolver:
 
     def __post_init__(self) -> None:
         self.name_to_bone = {bone.name: bone for bone in self.model.bones}
-        self.bones = {key: find_bone_name(self.model, names) for key, names in BONE_CANDIDATES.items()}
+        self.bones = {
+            key: find_bone_name(self.model, names)
+            for key, names in BONE_CANDIDATES.items()
+        }
 
     def bone(self, key: str) -> str | None:
         return self.bones.get(key)
