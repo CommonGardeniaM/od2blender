@@ -20,7 +20,7 @@ def write_vpd(
             ordered.append(key)
 
     lines: list[str] = []
-    lines.append("[Vocaloid Pose Data file")
+    lines.append("Vocaloid Pose Data file")
     lines.append("")
     lines.append(f"{model_name}.osm;\t\t// 親ファイル名")
     lines.append(f"{len(ordered)};\t\t\t\t// 総ポーズボーン数")
@@ -34,10 +34,13 @@ def write_vpd(
         )
         lines.append(f"Bone{idx}{{{bone_name}")
         lines.append(f"  {tx:.6f},{ty:.6f},{tz:.6f};\t\t\t\t// trans x,y,z")
-        lines.append(f"  {quat[0]:.6f},{quat[1]:.6f},{quat[2]:.6f},{quat[3]:.6f};\t\t// Quatanion x,y,z,w")
+        lines.append(
+            f"  {quat[0]:.6f},{quat[1]:.6f},{quat[2]:.6f},{quat[3]:.6f};\t\t// Quaternion x,y,z,w"
+        )
         lines.append("}")
+        lines.append("")
 
-    text = "\n".join(lines) + "\n"
+    text = "\r\n".join(lines) + "\r\n"
     with open(path, "w", encoding="shift_jis", newline="\n") as file_handle:
         file_handle.write(text)
     return text
