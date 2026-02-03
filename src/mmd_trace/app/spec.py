@@ -5,7 +5,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from mmd_trace.retarget.coords import AxisTransform
-from mmd_trace.retarget.pipeline import SolveMode
+from mmd_trace.retarget.pipeline import LegIkAxes, LegMode, SolveMode
 
 
 class AxisTransformSpec(BaseModel):
@@ -59,6 +59,9 @@ class RunSpec(BaseModel):
     vis_th: float = 0.2
     det_conf: float = 0.5
     solver: str = SolveMode.ROLL_2D.value
+    leg_mode: str = LegMode.IK.value
+    leg_ik_axes: str = LegIkAxes.XZ.value
+    leg_ik_scale: float = 1.0
 
     @field_validator("solver")
     @classmethod
@@ -67,9 +70,31 @@ class RunSpec(BaseModel):
             raise ValueError(f"solver must be one of: {SolveMode.ROLL_2D.value}, {SolveMode.WORLD_3D.value}")
         return value
 
+    @field_validator("leg_mode")
+    @classmethod
+    def _validate_leg_mode(cls, value: str) -> str:
+        if value not in {LegMode.IK.value, LegMode.FK.value}:
+            raise ValueError(f"leg_mode must be one of: {LegMode.IK.value}, {LegMode.FK.value}")
+        return value
+
+    @field_validator("leg_ik_axes")
+    @classmethod
+    def _validate_leg_ik_axes(cls, value: str) -> str:
+        if value not in {LegIkAxes.X.value, LegIkAxes.XZ.value}:
+            raise ValueError(f"leg_ik_axes must be one of: {LegIkAxes.X.value}, {LegIkAxes.XZ.value}")
+        return value
+
     @property
     def solver_mode(self) -> SolveMode:
         return SolveMode(self.solver)
+
+    @property
+    def leg_mode_enum(self) -> LegMode:
+        return LegMode(self.leg_mode)
+
+    @property
+    def leg_ik_axes_enum(self) -> LegIkAxes:
+        return LegIkAxes(self.leg_ik_axes)
 
 
 class DebugSpec(RunSpec):

@@ -30,6 +30,8 @@ BONE_CANDIDATES: dict[str, list[str]] = {
     "knee_R": ["右ひざ", "右膝", "knee_R", "knee.R"],
     "ankle_L": ["左足首", "ankle_L", "ankle.L"],
     "ankle_R": ["右足首", "ankle_R", "ankle.R"],
+    "leg_ik_L": ["leg IK_L", "leg_ik_L", "leg ik l"],
+    "leg_ik_R": ["leg IK_R", "leg_ik_R", "leg ik r"],
 }
 
 

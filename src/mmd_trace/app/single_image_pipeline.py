@@ -8,7 +8,13 @@ from mmd_trace.io.pmx import load_pmx
 from mmd_trace.io.vpd import write_vpd
 from mmd_trace.pose_provider import create_pose_provider
 from mmd_trace.retarget.coords import AxisTransform
-from mmd_trace.retarget.pipeline import SolveMode, SolveResult, build_rotations
+from mmd_trace.retarget.pipeline import (
+    LegIkAxes,
+    LegMode,
+    SolveMode,
+    SolveResult,
+    build_rotations,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -21,6 +27,9 @@ def generate_vpd_from_image(
     vis_th: float,
     det_conf: float,
     solver: SolveMode,
+    leg_mode: LegMode,
+    leg_ik_axes: LegIkAxes,
+    leg_ik_scale: float,
     print_vpd: bool = False,
     print_debug: bool = False,
 ) -> tuple[str, SolveResult]:
@@ -33,7 +42,16 @@ def generate_vpd_from_image(
     provider = create_pose_provider(det_conf=det_conf)
     bundle = provider.detect(image)
 
-    result = build_rotations(bundle, model, solver, axis, vis_th)
+    result = build_rotations(
+        bundle,
+        model,
+        solver,
+        axis,
+        vis_th,
+        leg_mode=leg_mode,
+        leg_ik_axes=leg_ik_axes,
+        leg_ik_scale=leg_ik_scale,
+    )
     vpd_text = write_vpd(out_path, model.model_name, result.bone_quat_local, result.bone_trans)
 
     LOG.info("VPD written: %s", out_path)

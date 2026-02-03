@@ -12,7 +12,7 @@ from mmd_trace.io.pmx import load_pmx
 from mmd_trace.pose_provider import create_pose_provider
 from mmd_trace.retarget.coords import AxisTransform
 from mmd_trace.retarget.indices import POSE_CONNECTIONS, POSE_IDX
-from mmd_trace.retarget.pipeline import SolveMode, build_rotations
+from mmd_trace.retarget.pipeline import LegIkAxes, LegMode, SolveMode, build_rotations
 from mmd_trace.retarget.quat import apply
 from mmd_trace.viz.landmarks_overlay import draw_landmarks
 
@@ -174,6 +174,9 @@ def generate_debug_visualization(
     vis_th: float,
     det_conf: float,
     solver: SolveMode,
+    leg_mode: LegMode,
+    leg_ik_axes: LegIkAxes,
+    leg_ik_scale: float,
     mode: str,
     project: str,
     axis_scale: float,
@@ -186,7 +189,16 @@ def generate_debug_visualization(
 
     provider = create_pose_provider(det_conf=det_conf)
     bundle = provider.detect(image)
-    result = build_rotations(bundle, model, solver, axis, vis_th)
+    result = build_rotations(
+        bundle,
+        model,
+        solver,
+        axis,
+        vis_th,
+        leg_mode=leg_mode,
+        leg_ik_axes=leg_ik_axes,
+        leg_ik_scale=leg_ik_scale,
+    )
 
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     output_files: dict[str, str] = {}

@@ -10,7 +10,7 @@ from pathlib import Path
 from mmd_trace.app.single_image_pipeline import generate_vpd_from_image
 from mmd_trace.app.spec import AxisTransformSpec, DebugSpec, RunSpec, ValidationError
 from mmd_trace.io import load_pmx
-from mmd_trace.retarget.pipeline import SolveMode
+from mmd_trace.retarget.pipeline import LegIkAxes, LegMode, SolveMode
 from mmd_trace.viz.solver_debug import generate_debug_visualization
 
 LOG = logging.getLogger(__name__)
@@ -96,6 +96,9 @@ def cmd_pose_vpd(args: argparse.Namespace) -> int:
             vis_th=args.vis_th,
             det_conf=args.det_conf,
             solver=args.solver,
+            leg_mode=args.leg_mode,
+            leg_ik_axes=args.leg_ik_axes,
+            leg_ik_scale=args.leg_ik_scale,
         )
     except ValidationError as exc:
         LOG.error("Invalid arguments: %s", exc)
@@ -112,6 +115,9 @@ def cmd_pose_vpd(args: argparse.Namespace) -> int:
             vis_th=run_spec.vis_th,
             det_conf=run_spec.det_conf,
             solver=run_spec.solver_mode,
+            leg_mode=run_spec.leg_mode_enum,
+            leg_ik_axes=run_spec.leg_ik_axes_enum,
+            leg_ik_scale=run_spec.leg_ik_scale,
             print_vpd=args.print_vpd,
             print_debug=args.print_debug,
         )
@@ -135,6 +141,9 @@ def cmd_debug_visualize(args: argparse.Namespace) -> int:
             project=args.project,
             axis_scale=args.axis_scale,
             dpi=args.dpi,
+            leg_mode=args.leg_mode,
+            leg_ik_axes=args.leg_ik_axes,
+            leg_ik_scale=args.leg_ik_scale,
         )
     except ValidationError as exc:
         LOG.error("Invalid arguments: %s", exc)
@@ -151,6 +160,9 @@ def cmd_debug_visualize(args: argparse.Namespace) -> int:
             vis_th=debug_spec.vis_th,
             det_conf=debug_spec.det_conf,
             solver=SolveMode(debug_spec.solver),
+            leg_mode=debug_spec.leg_mode_enum,
+            leg_ik_axes=debug_spec.leg_ik_axes_enum,
+            leg_ik_scale=debug_spec.leg_ik_scale,
             mode=debug_spec.mode,
             project=debug_spec.project,
             axis_scale=debug_spec.axis_scale,
@@ -197,6 +209,24 @@ def main() -> int:
         default=SolveMode.ROLL_2D.value,
         help="Solver mode (default: 2d_roll)",
     )
+    pose_parser.add_argument(
+        "--leg_mode",
+        choices=[LegMode.IK.value, LegMode.FK.value],
+        default=LegMode.IK.value,
+        help="Leg output mode (default: ik)",
+    )
+    pose_parser.add_argument(
+        "--leg_ik_axes",
+        choices=[LegIkAxes.X.value, LegIkAxes.XZ.value],
+        default=LegIkAxes.XZ.value,
+        help="Leg IK offset axes (default: xz)",
+    )
+    pose_parser.add_argument(
+        "--leg_ik_scale",
+        type=float,
+        default=1.0,
+        help="Leg IK scale multiplier (default: 1.0)",
+    )
     pose_parser.add_argument("--print_vpd", action="store_true", help="Print the generated VPD text")
     pose_parser.add_argument("--print_debug", action="store_true", help="Print debug info")
 
@@ -219,6 +249,24 @@ def main() -> int:
         choices=[SolveMode.ROLL_2D.value, SolveMode.WORLD_3D.value],
         default=SolveMode.ROLL_2D.value,
         help="Solver mode (default: 2d_roll)",
+    )
+    debug_parser.add_argument(
+        "--leg_mode",
+        choices=[LegMode.IK.value, LegMode.FK.value],
+        default=LegMode.IK.value,
+        help="Leg output mode (default: ik)",
+    )
+    debug_parser.add_argument(
+        "--leg_ik_axes",
+        choices=[LegIkAxes.X.value, LegIkAxes.XZ.value],
+        default=LegIkAxes.XZ.value,
+        help="Leg IK offset axes (default: xz)",
+    )
+    debug_parser.add_argument(
+        "--leg_ik_scale",
+        type=float,
+        default=1.0,
+        help="Leg IK scale multiplier (default: 1.0)",
     )
     debug_parser.add_argument(
         "--mode",
