@@ -1,18 +1,12 @@
-"""Pose provider implementations for MMD Trace."""
+"""Pose provider package."""
 from __future__ import annotations
 
-from mmd_trace.pose_provider.mediapipe_provider import (
-    Landmark3D,
-    MediaPipePoseProvider,
-    PoseFrame3D,
-    POSE_CONNECTIONS,
-    LANDMARK_NAMES,
-)
+from .base import PoseBundleNp, PoseProvider, create_pose_provider
+from .mediapipe_provider import MediaPipePoseProvider
 
 __all__ = [
-    "Landmark3D",
+    "PoseBundleNp",
+    "PoseProvider",
+    "create_pose_provider",
     "MediaPipePoseProvider",
-    "PoseFrame3D",
-    "POSE_CONNECTIONS",
-    "LANDMARK_NAMES",
 ]

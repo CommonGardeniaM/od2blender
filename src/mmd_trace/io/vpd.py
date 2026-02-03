@@ -1,19 +1,17 @@
 """VPD writer for MMD pose data."""
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
-
 import numpy as np
 
 
 def write_vpd(
     path: str,
     model_name: str,
-    bone_quat_local: Dict[str, np.ndarray],
-    bone_trans: Dict[str, Tuple[float, float, float]],
+    bone_quat_local: dict[str, np.ndarray],
+    bone_trans: dict[str, tuple[float, float, float]],
 ) -> str:
     """Write VPD file and return its content as text."""
-    ordered: List[str] = []
+    ordered: list[str] = []
     for key in bone_trans.keys():
         if key not in ordered:
             ordered.append(key)
@@ -21,7 +19,7 @@ def write_vpd(
         if key not in ordered:
             ordered.append(key)
 
-    lines: List[str] = []
+    lines: list[str] = []
     lines.append("[Vocaloid Pose Data file")
     lines.append("")
     lines.append(f"{model_name}.osm;\t\t// 親ファイル名")

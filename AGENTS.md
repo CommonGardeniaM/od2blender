@@ -1,17 +1,17 @@
 # AGENTS.md
 
-`mmd-trace`リポジトリで作業するAIコーディングエージェント用のガイドライン。
+`mmd-trace`リポジトリで作業するAIコーディングエージェント用ガイドライン。
 
 ## ビルド・テストコマンド
 
-**パッケージマネージャー**: uv (モダンPython)
+**パッケージマネージャー**: uv
 
 ```bash
 # 環境セットアップ
 uv venv
 uv pip install -e ".[dev]"
 
-# 依存関係の追加（pyproject.tomlに自動記録される）
+# 依存関係の追加（pyproject.tomlに自動記録）
 uv add numpy pandas
 
 # 開発依存の追加
@@ -21,16 +21,10 @@ uv add --dev pytest black
 uv run pytest
 
 # 単一テスト実行
-uv run pytest tests/test_center_groove.py::test_center_groove_pattern_a -v
+uv run pytest tests/test_axis_transform.py::test_drop_z -v
 
 # カバレッジ付き実行
 uv run pytest --cov=src/mmd_trace
-
-# 開発依存のみインストール
-uv pip install pytest
-
-# CLI使用例
-python -m mmd_trace trace --video input.mp4 --pmx model.pmx --out out_dir --config config.yaml
 ```
 
 ## コードスタイルガイドライン
@@ -48,11 +42,12 @@ python -m mmd_trace trace --video input.mp4 --pmx model.pmx --out out_dir --conf
 - トップレベルクラス/関数間は2行空行、メソッド内は1行空行
 - 複数行コレクションには末尾カンマを使用
 
-### 型ヒント
-- Python 3.10+ が必要 - モダンな構文を使用
-- `from typing import Dict, List, Optional, Any` を使用
+### 型ヒント（Python 3.11）
+- **Python 3.11+ 必須**
+- `list[str]` / `dict[str, int]` / `tuple[int, int]` のようにビルトインジェネリクスを使う
+- `Optional[T]` ではなく `T | None` を使う
+- `from typing import ...` は `Protocol` など必要最小限のみ
 - 関数シグネチャには戻り値型が必須: `def func() -> ReturnType:`
-- ヌル許容パラメータ/戻り値には `Optional[Type]` を使用
 - Dataclassフィールドは可変デフォルトに `field(default_factory=...)` を使用
 
 ### 命名規則
@@ -72,7 +67,6 @@ python -m mmd_trace trace --video input.mp4 --pmx model.pmx --out out_dir --conf
 - 深いネストよりも早期リターン/raiseを優先
 - `raise ValueError("説明的なメッセージ")` を無効な入力に使用
 - `None` を明示的にガード句で処理
-- `Optional[Type]` でヌル許容の戻り値を示す
 
 ### ログ出力
 - モジュールレベルのロガー: `LOG = logging.getLogger(__name__)`
@@ -82,20 +76,12 @@ python -m mmd_trace trace --video input.mp4 --pmx model.pmx --out out_dir --conf
 ### Dataclassパターン
 ```python
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 @dataclass
 class ConfigSection:
     """セクションの説明。"""
     enabled: bool = True
-    values: Dict[str, float] = field(default_factory=dict)
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ConfigSection":
-        return cls(
-            enabled=bool(data.get("enabled", True)),
-            values=dict(data.get("values", {})),
-        )
+    values: dict[str, float] = field(default_factory=dict)
 ```
 
 ### テスト
@@ -103,58 +89,62 @@ class ConfigSection:
 - テスト関数: `def test_<feature>():`
 - `assert` 文を使用（pytestスタイル）
 - パッケージルートからインポート: `from mmd_trace.module import Class`
-- docstringよりも説明的なテスト名を優先
 
-### 設定
-- `.yaml` 拡張子のYAML設定ファイル
-- 小文字のキーとアンダースコアを使用
-- ローダーでYAMLとJSONの両方をサポート
-- デフォルトの骨マップは日本語の骨名を使用（例: `"センター"`, `"グルーブ"`）
-
-## プロジェクト構成
+## プロジェクト構成（現在）
 
 ```
 src/mmd_trace/
-  __init__.py          # バージョン付きパッケージ初期化
-  cli.py               # argparseを使用したCLIエントリーポイント
-  config.py            # Config dataclassと読み込み
-  io_pose.py           # Pose JSON I/O with dataclasses
-  io_video.py          # 動画処理
-  smoothing.py         # ポーズ平滑化アルゴリズム
-  diagnose.py          # 診断収集/レポート
-  axis_auto.py         # 自動軸推論
-  pose_provider/       # ポーズ検出プロバイダー
+  app/
+    single_image_pipeline.py
+    spec.py
+  io/
+    pmx.py
+    vpd.py
+  pose_provider/
     base.py
     mediapipe_provider.py
-  mmd_io/              # MMD形式I/O
-    pmx_adapter.py
-    vmd_writer.py
-  retarget/            # リターゲティングロジック
-    mapping.py         # 骨マッピング定義
-    kinematics.py      # クォータニオン・ユーティリティ
-    center_groove.py   # センター/グルーブ計算
-    retargeter.py      # メインリターゲティングロジック
-tests/                 # pytestテストファイル
+  retarget/
+    indices.py
+    coords.py
+    quat.py
+    bone_resolver.py
+    solver_2d_roll.py
+    solver_3d.py
+    pipeline.py
+  viz/
+    landmarks_overlay.py
+    solver_debug.py
+  cli.py
+tests/
+scripts/
 ```
 
-## CLI使用例
+## CLI使用例（単一画像）
 
 ```bash
-# フルパイプライン
-mmd-trace trace --video input.mp4 --pmx model.pmx --out out_dir --config config.yaml --smooth
+# VPD生成（2Dロール既定）
+uv run python -m mmd_trace pose-vpd \
+  --pmx model.pmx \
+  --image input.png \
+  --out output/pose.vpd \
+  --solver 2d_roll
 
-# 平滑化なし
-mmd-trace trace --video input.mp4 --pmx model.pmx --out out_dir --config config.yaml --no-smooth
-
-# 診断付き
-mmd-trace trace --video input.mp4 --pmx model.pmx --out out_dir --config config.yaml --diagnose
+# デバッグ可視化
+uv run python -m mmd_trace debug-visualize \
+  --pmx model.pmx \
+  --image input.png \
+  --out output/debug_viz \
+  --solver 2d_roll \
+  --mode both
 ```
 
 ## 依存関係
 
 主要な依存関係:
-- numpy (配列操作)
-- opencv-python (動画I/O)
-- mediapipe (ポーズ検出)
-- pypmxvmd (MMD VMD形式)
-- pyyaml (設定読み込み)
+- numpy
+- opencv-python
+- mediapipe
+- scipy
+- pydantic
+- pypmxvmd
+- pyyaml

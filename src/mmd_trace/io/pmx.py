@@ -5,7 +5,6 @@ import struct
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 
@@ -125,20 +124,20 @@ class PmxVertex:
     position: np.ndarray  # [3] float
     normal: np.ndarray  # [3] float
     uv: np.ndarray  # [2] float
-    additional_uvs: List[np.ndarray]  # List of [4] float
+    additional_uvs: list[np.ndarray]  # List of [4] float
     weight_type: int
-    weight_bone_indices: List[int]
-    weight_values: List[float]
-    sdef_c: Optional[np.ndarray] = None  # [3] for SDEF
-    sdef_r0: Optional[np.ndarray] = None  # [3] for SDEF
-    sdef_r1: Optional[np.ndarray] = None  # [3] for SDEF
+    weight_bone_indices: list[int]
+    weight_values: list[float]
+    sdef_c: np.ndarray | None = None  # [3] for SDEF
+    sdef_r0: np.ndarray | None = None  # [3] for SDEF
+    sdef_r1: np.ndarray | None = None  # [3] for SDEF
     edge_scale: float = field(default=1.0)
 
 
 @dataclass
 class PmxFace:
     """Face (triangle) indices."""
-    indices: Tuple[int, int, int]
+    indices: tuple[int, int, int]
 
 
 @dataclass
@@ -190,8 +189,8 @@ class PmxBoneIkLink:
     """IK link with optional angle limits."""
     bone_index: int
     has_limits: bool
-    min_limit: Optional[np.ndarray] = None  # [3] radians
-    max_limit: Optional[np.ndarray] = None  # [3] radians
+    min_limit: np.ndarray | None = None  # [3] radians
+    max_limit: np.ndarray | None = None  # [3] radians
 
 
 @dataclass
@@ -200,7 +199,7 @@ class PmxBoneIk:
     target_index: int
     loop_count: int
     limit_radian: float
-    links: List[PmxBoneIkLink]
+    links: list[PmxBoneIkLink]
 
 
 @dataclass
@@ -214,20 +213,20 @@ class PmxBone:
     layer: int
     flags: int
     # Tail (one of these)
-    tail_index: Optional[int] = None
-    tail_offset: Optional[np.ndarray] = None  # [3] float
+    tail_index: int | None = None
+    tail_offset: np.ndarray | None = None  # [3] float
     # Inherit
-    inherit_rotation: Optional[PmxBoneInherit] = None
-    inherit_translation: Optional[PmxBoneInherit] = None
+    inherit_rotation: PmxBoneInherit | None = None
+    inherit_translation: PmxBoneInherit | None = None
     # Fixed axis
-    fixed_axis: Optional[np.ndarray] = None  # [3] float
+    fixed_axis: np.ndarray | None = None  # [3] float
     # Local coordinate
-    local_x_vector: Optional[np.ndarray] = None  # [3] float
-    local_z_vector: Optional[np.ndarray] = None  # [3] float
+    local_x_vector: np.ndarray | None = None  # [3] float
+    local_z_vector: np.ndarray | None = None  # [3] float
     # External parent
-    external_parent: Optional[int] = None
+    external_parent: int | None = None
     # IK
-    ik: Optional[PmxBoneIk] = None
+    ik: PmxBoneIk | None = None
 
     @property
     def has_indexed_tail(self) -> bool:
@@ -353,7 +352,7 @@ class PmxMorph:
     name_en: str
     panel: int  # 1-4 (or 0 for system)
     morph_type: int
-    offsets: List[PmxMorphOffset]
+    offsets: list[PmxMorphOffset]
 
 
 # =============================================================================
@@ -374,7 +373,7 @@ class PmxDisplayFrame:
     name: str
     name_en: str
     special: bool  # True for special frames (root, expression)
-    items: List[PmxDisplayFrameItem]
+    items: list[PmxDisplayFrameItem]
 
 
 # =============================================================================
@@ -418,8 +417,8 @@ class PmxJoint:
     angular_min: np.ndarray  # [3] radians
     angular_max: np.ndarray  # [3] radians
     # For spring6dof
-    spring_linear: Optional[np.ndarray] = None  # [3]
-    spring_angular: Optional[np.ndarray] = None  # [3]
+    spring_linear: np.ndarray | None = None  # [3]
+    spring_angular: np.ndarray | None = None  # [3]
 
 
 @dataclass
@@ -460,8 +459,8 @@ class PmxSoftbody:
     cluster_k_dp: float
     cluster_k_drag: float
     cluster_k_pr: float
-    anchors: List[Tuple[int, int]]  # (rigidbody_index, is_near) pairs
-    vertex_pins: List[int]  # vertex indices
+    anchors: list[tuple[int, int]]  # (rigidbody_index, is_near) pairs
+    vertex_pins: list[int]  # vertex indices
 
 
 # =============================================================================
@@ -477,20 +476,20 @@ class PmxModel:
     model_info: PmxModelInfo
 
     # Geometry
-    vertices: List[PmxVertex]
-    faces: List[PmxFace]
-    textures: List[PmxTexture]
-    materials: List[PmxMaterial]
+    vertices: list[PmxVertex]
+    faces: list[PmxFace]
+    textures: list[PmxTexture]
+    materials: list[PmxMaterial]
 
     # Rigging
-    bones: List[PmxBone]
-    morphs: List[PmxMorph]
-    display_frames: List[PmxDisplayFrame]
+    bones: list[PmxBone]
+    morphs: list[PmxMorph]
+    display_frames: list[PmxDisplayFrame]
 
     # Physics
-    rigidbodies: List[PmxRigidbody]
-    joints: List[PmxJoint]
-    softbodies: List[PmxSoftbody]
+    rigidbodies: list[PmxRigidbody]
+    joints: list[PmxJoint]
+    softbodies: list[PmxSoftbody]
 
     # Helper properties
     @property
@@ -505,7 +504,7 @@ class PmxModel:
     def vertex_count(self) -> int:
         return len(self.vertices)
 
-    def get_bone(self, name: str) -> Optional[PmxBone]:
+    def get_bone(self, name: str) -> PmxBone | None:
         """Find bone by name (case-insensitive)."""
         name_lower = name.lower()
         for bone in self.bones:
@@ -513,17 +512,17 @@ class PmxModel:
                 return bone
         return None
 
-    def get_bone_by_index(self, index: int) -> Optional[PmxBone]:
+    def get_bone_by_index(self, index: int) -> PmxBone | None:
         """Get bone by index."""
         if 0 <= index < len(self.bones):
             return self.bones[index]
         return None
 
-    def get_bone_children(self, bone_index: int) -> List[PmxBone]:
+    def get_bone_children(self, bone_index: int) -> list[PmxBone]:
         """Get direct children of a bone."""
         return [b for b in self.bones if b.parent_index == bone_index]
 
-    def get_bone_hierarchy(self, bone_index: int) -> List[int]:
+    def get_bone_hierarchy(self, bone_index: int) -> list[int]:
         """Get parent hierarchy from root to this bone (excluding itself)."""
         hierarchy = []
         current = bone_index
@@ -535,7 +534,7 @@ class PmxModel:
             current = bone.parent_index
         return list(reversed(hierarchy))
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate model consistency and return list of issues."""
         issues = []
 
@@ -679,7 +678,7 @@ class PmxModel:
 
         return local_matrix
 
-    def get_parent_chain(self, bone_index: int) -> List[PmxBone]:
+    def get_parent_chain(self, bone_index: int) -> list[PmxBone]:
         """Get list of parent bones from root to immediate parent."""
         hierarchy = []
         current = bone_index
@@ -705,7 +704,7 @@ class PmxBinaryReader:
     def __init__(self, data: bytes) -> None:
         self.stream = BytesIO(data)
         self.encoding = "utf-16-le"
-        self.globals: Optional[PmxGlobals] = None
+        self.globals: PmxGlobals | None = None
 
     def read_int8(self) -> int:
         return struct.unpack("b", self.stream.read(1))[0]
@@ -791,7 +790,7 @@ class PmxParser:
 
     def __init__(self) -> None:
         self.reader: PmxBinaryReader = PmxBinaryReader(b"")
-        self.model: Optional[PmxModel] = None
+        self.model: PmxModel | None = None
 
     def parse(self, data: bytes) -> PmxModel:
         """Parse PMX binary data."""
@@ -822,7 +821,7 @@ class PmxParser:
         joints = self._parse_joints()
 
         # Soft body (PMX 2.1)
-        softbodies: List[PmxSoftbody] = []
+        softbodies: list[PmxSoftbody] = []
         if header.version >= 2.1:
             softbodies = self._parse_softbodies()
 
@@ -879,7 +878,7 @@ class PmxParser:
             comment_en=self.reader.read_string(),
         )
 
-    def _parse_vertices(self, additional_uv_count: int) -> List[PmxVertex]:
+    def _parse_vertices(self, additional_uv_count: int) -> list[PmxVertex]:
         count = self.reader.read_int32()
         vertices = []
 
@@ -949,7 +948,7 @@ class PmxParser:
 
         return vertices
 
-    def _parse_faces(self) -> List[PmxFace]:
+    def _parse_faces(self) -> list[PmxFace]:
         count = self.reader.read_int32()
         faces = []
 
@@ -961,7 +960,7 @@ class PmxParser:
 
         return faces
 
-    def _parse_textures(self) -> List[PmxTexture]:
+    def _parse_textures(self) -> list[PmxTexture]:
         count = self.reader.read_int32()
         textures = []
 
@@ -973,7 +972,7 @@ class PmxParser:
 
         return textures
 
-    def _parse_materials(self) -> List[PmxMaterial]:
+    def _parse_materials(self) -> list[PmxMaterial]:
         count = self.reader.read_int32()
         materials = []
 
@@ -1022,7 +1021,7 @@ class PmxParser:
 
         return materials
 
-    def _parse_bones(self) -> List[PmxBone]:
+    def _parse_bones(self) -> list[PmxBone]:
         count = self.reader.read_int32()
         bones = []
 
@@ -1128,7 +1127,7 @@ class PmxParser:
 
         return bones
 
-    def _parse_morphs(self) -> List[PmxMorph]:
+    def _parse_morphs(self) -> list[PmxMorph]:
         count = self.reader.read_int32()
         morphs = []
 
@@ -1207,7 +1206,7 @@ class PmxParser:
         else:
             raise ValueError(f"Unknown morph type: {morph_type}")
 
-    def _parse_display_frames(self) -> List[PmxDisplayFrame]:
+    def _parse_display_frames(self) -> list[PmxDisplayFrame]:
         count = self.reader.read_int32()
         frames = []
 
@@ -1236,7 +1235,7 @@ class PmxParser:
 
         return frames
 
-    def _parse_rigidbodies(self) -> List[PmxRigidbody]:
+    def _parse_rigidbodies(self) -> list[PmxRigidbody]:
         count = self.reader.read_int32()
         rigidbodies = []
 
@@ -1278,7 +1277,7 @@ class PmxParser:
 
         return rigidbodies
 
-    def _parse_joints(self) -> List[PmxJoint]:
+    def _parse_joints(self) -> list[PmxJoint]:
         count = self.reader.read_int32()
         joints = []
 
@@ -1320,7 +1319,7 @@ class PmxParser:
 
         return joints
 
-    def _parse_softbodies(self) -> List[PmxSoftbody]:
+    def _parse_softbodies(self) -> list[PmxSoftbody]:
         count = self.reader.read_int32()
         softbodies = []
 
