@@ -7,10 +7,18 @@ import logging
 import sys
 from pathlib import Path
 
+import cv2
+
 from mmd_trace.app.single_image_pipeline import generate_vpd_from_image
 from mmd_trace.app.spec import AxisTransformSpec, DebugSpec, RunSpec, ValidationError
 from mmd_trace.io import load_pmx
+from mmd_trace.pose_provider import create_pose_provider
+from mmd_trace.retarget.coords import center_points
 from mmd_trace.retarget.pipeline import LegIkAxes, LegMode, SolveMode
+from mmd_trace.viz.pose_skeleton_image import (
+    render_pose_skeleton_image,
+    write_pose_skeleton_png,
+)
 from mmd_trace.viz.solver_debug import generate_debug_visualization
 
 LOG = logging.getLogger(__name__)
@@ -22,6 +30,27 @@ def setup_logging(verbose: bool = False) -> None:
         level=level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+
+
+def _apply_solver_defaults(args: argparse.Namespace) -> None:
+    if args.solver == SolveMode.MIKAPO.value:
+        if not hasattr(args, "axis_x"):
+            args.axis_x = 1.0
+        if not hasattr(args, "axis_y"):
+            args.axis_y = 1.0
+        if not hasattr(args, "axis_z"):
+            args.axis_z = 1.0
+        if not hasattr(args, "leg_mode"):
+            args.leg_mode = LegMode.FK.value
+    else:
+        if not hasattr(args, "axis_x"):
+            args.axis_x = 1.0
+        if not hasattr(args, "axis_y"):
+            args.axis_y = 1.0
+        if not hasattr(args, "axis_z"):
+            args.axis_z = -1.0
+        if not hasattr(args, "leg_mode"):
+            args.leg_mode = LegMode.IK.value
 
 
 def _parse_axis_spec(args: argparse.Namespace) -> AxisTransformSpec:
@@ -88,6 +117,7 @@ def cmd_list_bones(args: argparse.Namespace) -> int:
 
 def cmd_pose_vpd(args: argparse.Namespace) -> int:
     try:
+        _apply_solver_defaults(args)
         axis_spec = _parse_axis_spec(args)
         run_spec = RunSpec(
             pmx=args.pmx,
@@ -127,8 +157,66 @@ def cmd_pose_vpd(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_pose_image(args: argparse.Namespace) -> int:
+    try:
+        axis_spec = AxisTransformSpec(
+            axis_x=args.axis_x,
+            axis_y=args.axis_y,
+            axis_z=args.axis_z,
+            axis_matrix=args.axis_matrix,
+            flip_y=True,
+        )
+    except ValidationError as exc:
+        LOG.error("Invalid arguments: %s", exc)
+        return 1
+
+    axis = axis_spec.to_internal()
+
+    image = cv2.imread(args.image)
+    if image is None:
+        LOG.error("Failed to read image: %s", args.image)
+        return 1
+
+    try:
+        provider = create_pose_provider(det_conf=args.det_conf)
+        bundle = provider.detect(image)
+    except Exception as exc:
+        LOG.error("Pose detection failed: %s", exc)
+        return 1
+
+    points = axis.apply(bundle.world_points)
+    if not args.no_center:
+        points, _ = center_points(points, bundle.world_vis, args.vis_th)
+
+    try:
+        skeleton_image = render_pose_skeleton_image(
+            points=points,
+            vis=bundle.world_vis,
+            width=args.width,
+            height=args.height,
+            margin=args.margin,
+            thickness=args.thickness,
+            yaw_deg=args.yaw,
+            pitch_deg=args.pitch,
+            roll_deg=args.roll,
+            vis_th=args.vis_th,
+        )
+    except ValueError as exc:
+        LOG.error("Invalid arguments: %s", exc)
+        return 1
+
+    try:
+        write_pose_skeleton_png(args.out, skeleton_image)
+    except Exception as exc:
+        LOG.error("Failed to write image: %s", exc)
+        return 1
+
+    return 0
+
+
 def cmd_debug_visualize(args: argparse.Namespace) -> int:
     try:
+        _apply_solver_defaults(args)
         axis_spec = _parse_axis_spec(args)
         debug_spec = DebugSpec(
             pmx=args.pmx,
@@ -193,9 +281,15 @@ def main() -> int:
     pose_parser.add_argument("--pmx", required=True, help="Path to PMX file")
     pose_parser.add_argument("--image", required=True, help="Input image path")
     pose_parser.add_argument("--out", default="pose.vpd", help="Output VPD path")
-    pose_parser.add_argument("--axis_x", type=float, default=1.0, help="Axis mapping for X")
-    pose_parser.add_argument("--axis_y", type=float, default=1.0, help="Axis mapping for Y")
-    pose_parser.add_argument("--axis_z", type=float, default=-1.0, help="Axis mapping for Z")
+    pose_parser.add_argument(
+        "--axis_x", type=float, default=argparse.SUPPRESS, help="Axis mapping for X"
+    )
+    pose_parser.add_argument(
+        "--axis_y", type=float, default=argparse.SUPPRESS, help="Axis mapping for Y"
+    )
+    pose_parser.add_argument(
+        "--axis_z", type=float, default=argparse.SUPPRESS, help="Axis mapping for Z"
+    )
     pose_parser.add_argument(
         "--axis_matrix",
         default=None,
@@ -205,14 +299,19 @@ def main() -> int:
     pose_parser.add_argument("--det_conf", type=float, default=0.5, help="Detection confidence")
     pose_parser.add_argument(
         "--solver",
-        choices=[SolveMode.ROLL_2D.value, SolveMode.WORLD_3D.value],
+        choices=[
+            SolveMode.ROLL_2D.value,
+            SolveMode.WORLD_3D.value,
+            SolveMode.HYBRID_3D.value,
+            SolveMode.MIKAPO.value,
+        ],
         default=SolveMode.ROLL_2D.value,
         help="Solver mode (default: 2d_roll)",
     )
     pose_parser.add_argument(
         "--leg_mode",
         choices=[LegMode.IK.value, LegMode.FK.value],
-        default=LegMode.IK.value,
+        default=argparse.SUPPRESS,
         help="Leg output mode (default: ik)",
     )
     pose_parser.add_argument(
@@ -230,13 +329,41 @@ def main() -> int:
     pose_parser.add_argument("--print_vpd", action="store_true", help="Print the generated VPD text")
     pose_parser.add_argument("--print_debug", action="store_true", help="Print debug info")
 
+    image_parser = subparsers.add_parser("pose-image", help="Generate 3D skeleton PNG")
+    image_parser.add_argument("--image", required=True, help="Input image path")
+    image_parser.add_argument("--out", default="pose_skeleton_3d.png", help="Output PNG path")
+    image_parser.add_argument("--vis_th", type=float, default=0.2, help="Landmark visibility threshold")
+    image_parser.add_argument("--det_conf", type=float, default=0.5, help="Detection confidence")
+    image_parser.add_argument("--axis_x", type=float, default=1.0, help="Axis mapping for X")
+    image_parser.add_argument("--axis_y", type=float, default=1.0, help="Axis mapping for Y")
+    image_parser.add_argument("--axis_z", type=float, default=1.0, help="Axis mapping for Z")
+    image_parser.add_argument(
+        "--axis_matrix",
+        default=None,
+        help="3x3 axis transform as 9 comma-separated floats (row-major), overrides axis_x/y/z",
+    )
+    image_parser.add_argument("--no_center", action="store_true", help="Disable center alignment")
+    image_parser.add_argument("--width", type=int, default=768, help="Output width")
+    image_parser.add_argument("--height", type=int, default=768, help="Output height")
+    image_parser.add_argument("--margin", type=float, default=0.1, help="Output margin ratio")
+    image_parser.add_argument("--thickness", type=int, default=2, help="Line thickness")
+    image_parser.add_argument("--yaw", type=float, default=45.0, help="Yaw angle in degrees")
+    image_parser.add_argument("--pitch", type=float, default=20.0, help="Pitch angle in degrees")
+    image_parser.add_argument("--roll", type=float, default=0.0, help="Roll angle in degrees")
+
     debug_parser = subparsers.add_parser("debug-visualize", help="Generate debug visualization")
     debug_parser.add_argument("--pmx", required=True, help="Path to PMX file")
     debug_parser.add_argument("--image", required=True, help="Input image path")
     debug_parser.add_argument("--out", default="debug_output", help="Output directory")
-    debug_parser.add_argument("--axis_x", type=float, default=1.0, help="Axis mapping for X")
-    debug_parser.add_argument("--axis_y", type=float, default=1.0, help="Axis mapping for Y")
-    debug_parser.add_argument("--axis_z", type=float, default=-1.0, help="Axis mapping for Z")
+    debug_parser.add_argument(
+        "--axis_x", type=float, default=argparse.SUPPRESS, help="Axis mapping for X"
+    )
+    debug_parser.add_argument(
+        "--axis_y", type=float, default=argparse.SUPPRESS, help="Axis mapping for Y"
+    )
+    debug_parser.add_argument(
+        "--axis_z", type=float, default=argparse.SUPPRESS, help="Axis mapping for Z"
+    )
     debug_parser.add_argument(
         "--axis_matrix",
         default=None,
@@ -246,14 +373,19 @@ def main() -> int:
     debug_parser.add_argument("--det_conf", type=float, default=0.5, help="Detection confidence")
     debug_parser.add_argument(
         "--solver",
-        choices=[SolveMode.ROLL_2D.value, SolveMode.WORLD_3D.value],
+        choices=[
+            SolveMode.ROLL_2D.value,
+            SolveMode.WORLD_3D.value,
+            SolveMode.HYBRID_3D.value,
+            SolveMode.MIKAPO.value,
+        ],
         default=SolveMode.ROLL_2D.value,
         help="Solver mode (default: 2d_roll)",
     )
     debug_parser.add_argument(
         "--leg_mode",
         choices=[LegMode.IK.value, LegMode.FK.value],
-        default=LegMode.IK.value,
+        default=argparse.SUPPRESS,
         help="Leg output mode (default: ik)",
     )
     debug_parser.add_argument(
@@ -300,6 +432,8 @@ def main() -> int:
         return cmd_list_bones(args)
     if args.command == "pose-vpd":
         return cmd_pose_vpd(args)
+    if args.command == "pose-image":
+        return cmd_pose_image(args)
     if args.command == "debug-visualize":
         return cmd_debug_visualize(args)
 

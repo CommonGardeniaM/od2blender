@@ -66,8 +66,16 @@ class RunSpec(BaseModel):
     @field_validator("solver")
     @classmethod
     def _validate_solver(cls, value: str) -> str:
-        if value not in {SolveMode.ROLL_2D.value, SolveMode.WORLD_3D.value}:
-            raise ValueError(f"solver must be one of: {SolveMode.ROLL_2D.value}, {SolveMode.WORLD_3D.value}")
+        if value not in {
+            SolveMode.ROLL_2D.value,
+            SolveMode.WORLD_3D.value,
+            SolveMode.HYBRID_3D.value,
+            SolveMode.MIKAPO.value,
+        }:
+            raise ValueError(
+                "solver must be one of: "
+                f"{SolveMode.ROLL_2D.value}, {SolveMode.WORLD_3D.value}, {SolveMode.HYBRID_3D.value}, {SolveMode.MIKAPO.value}"
+            )
         return value
 
     @field_validator("leg_mode")

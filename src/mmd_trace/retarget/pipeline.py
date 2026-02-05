@@ -15,6 +15,8 @@ from .coords import AxisTransform, center_points, drop_z
 from .indices import POSE_IDX
 from .solver_2d_roll import solve as solve_2d_roll
 from .solver_3d import solve as solve_3d
+from .solver_3d_hybrid import solve as solve_3d_hybrid
+from .solver_mikapo import solve as solve_mikapo
 
 LOG = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ class SolveMode(str, Enum):
 
     ROLL_2D = "2d_roll"
     WORLD_3D = "3d"
+    HYBRID_3D = "3d_hybrid"
+    MIKAPO = "mikapo"
 
 
 class LegMode(str, Enum):
@@ -175,20 +179,31 @@ def build_rotations(
     leg_ik_scale: float = 1.0,
 ) -> SolveResult:
     points = axis.apply(bundle.world_points)
-    points_centered, _ = center_points(points, bundle.world_vis, vis_th)
-
-    if mode == SolveMode.ROLL_2D:
-        points_use = drop_z(points_centered)
-        bone_local, bone_world, centers, key_to_name = solve_2d_roll(
-            model, points_use, bundle.world_vis, vis_th
-        )
-    elif mode == SolveMode.WORLD_3D:
-        points_use = points_centered
-        bone_local, bone_world, centers, key_to_name = solve_3d(
-            model, points_use, bundle.world_vis, vis_th
+    if mode == SolveMode.MIKAPO:
+        points_centered = points
+        points_use = points
+        bone_local, bone_world, centers, key_to_name = solve_mikapo(
+            model, points_use, None, vis_th
         )
     else:
-        raise ValueError(f"Unknown solver mode: {mode}")
+        points_centered, _ = center_points(points, bundle.world_vis, vis_th)
+        if mode == SolveMode.ROLL_2D:
+            points_use = drop_z(points_centered)
+            bone_local, bone_world, centers, key_to_name = solve_2d_roll(
+                model, points_use, bundle.world_vis, vis_th
+            )
+        elif mode == SolveMode.WORLD_3D:
+            points_use = points_centered
+            bone_local, bone_world, centers, key_to_name = solve_3d(
+                model, points_use, bundle.world_vis, vis_th
+            )
+        elif mode == SolveMode.HYBRID_3D:
+            points_use = points_centered
+            bone_local, bone_world, centers, key_to_name = solve_3d_hybrid(
+                model, points_use, bundle.world_vis, vis_th
+            )
+        else:
+            raise ValueError(f"Unknown solver mode: {mode}")
 
     bone_trans: dict[str, tuple[float, float, float]] = {}
     if leg_mode == LegMode.IK:
